@@ -22,7 +22,7 @@ cd /scratch/mukil/final/cemformer
 # python main.py --model memvit --mem_per_layer 12
 
 OMP_NUM_THREADS=1
-python main.py --model memvit --num_classes 5 --mem_per_layer 2 --batch 2
+python main_test.py --model memvit --num_classes 5 --mem_per_layer 2 --batch 2
 # torchrun --nproc_per_node=1 --master_addr localhost --master_port 12357 main.py --model memvit --num_classes 5 --mem_per_layer 4 --batch 2
 # torchrun --nproc_per_node=1 --master_addr localhost --master_port 12358 main.py --model memvit --num_classes 5 --mem_per_layer 6 --batch 2
 # torchrun --nproc_per_node=1 --master_addr localhost --master_port 12359 main.py --model memvit --num_classes 5 --mem_per_layer 8 --batch 2

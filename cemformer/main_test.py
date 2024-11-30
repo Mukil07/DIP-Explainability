@@ -41,7 +41,7 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_I3D/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_I3D_2/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
@@ -60,36 +60,26 @@ def cross_validate_model(args, dataset, n_splits=5):
         del ckp['logits.conv3d.weight']
        #del ckp['pos_embed']
         model.load_state_dict(ckp,strict=False)
-        #import pdb;pdb.set_trace()
-
-
-        # Create a WeightedRandomSampler
 
         #import pdb;pdb.set_trace()
         # Creating data loaders for training and validation
         train_subset = torch.utils.data.Subset(dataset, train_idx)
         val_subset = torch.utils.data.Subset(dataset, val_idx)
-
-        # labels_train = [label for _,_, label,_ in train_subset]
-        # class_counts_train = Counter(labels_train)
-        # class_weights_train = {cls: 1.0 / count for cls, count in class_counts_train.items()}
-        # sample_weights_train = [class_weights_train[label] for label in labels_train]
-        # sampler_train = WeightedRandomSampler(sample_weights_train, num_samples=len(train_subset), replacement=True)
-
-        # labels_val = [label for _,_, label,_ in val_subset]
-        # class_counts_val = Counter(labels_val)
-        # class_weights_val = {cls: 1.0 / count for cls, count in class_counts_val.items()}
-        # sample_weights_val = [class_weights_val[label] for label in labels_val]
-        # sampler_val = WeightedRandomSampler(sample_weights_val, num_samples=len(val_subset), replacement=True)
-
         train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch)
         val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch)
 
-        criterion=torch.nn.CrossEntropyLoss()
+
+        # weights = [4, 2, 4, 2, 1]
+        # class_weights = torch.FloatTensor(weights).cuda()
+        # criterion = nn.CrossEntropyLoss(weight=class_weights)
+        criterion = nn.CrossEntropyLoss()
+        ### OLDER Settings 
+
+        #criterion=torch.nn.CrossEntropyLoss()
         #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
         
         ### TESTING SGD 
-        learning_rate = 0.01
+        learning_rate = 0.001
         momentum = 0.9
         weight_decay = 0.001
 
@@ -183,7 +173,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
     best_acc = 0 
     counter = 0 
     save_dir = "best_model_dir"
-
+    patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
     best_model_path = os.path.join(save_dir, f"best_model{args.mem_per_layer}.pth") 
     print("Started Training")
@@ -270,14 +260,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
 
         print(f"Accuracy(Trainign): {accuracy_train:.4f}, F1 Score: {f1_train:.4f}")
 
-        if  accuracy_train - best_acc  > min_delta:
-            best_acc = accuracy_train
-            counter = 0  
-            if args.distributed:
-                torch.save(model.module.state_dict(),best_model_path)
-            else:
-                torch.save(model.state_dict(),best_model_path)
-            print("best model is saved ")  
+
 
     # cleanup() 
         ### EVAL 
@@ -305,10 +288,9 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
                 img1=img1.type(torch.cuda.FloatTensor)
                 img2=img2.type(torch.cuda.FloatTensor)
                 outputs,feat = model(img1,img2) 
-#  size - (10,4,768)
+                #  size - (10,4,768)
 
                 #outputs = outputs.mean(dim=1)
-               # outputs = outputs.mean(dim=1)
 
                 loss = criterion(outputs, label)
                 context = [list(x) for x in zip(*context)]
@@ -359,6 +341,28 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
         writer.add_scalar("Loss/Validation", val_loss, epoch)
         writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
         writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
+        
+        if  accuracy_val - best_acc  > min_delta:
+            best_acc = accuracy_val
+            counter = 0  
+            if args.distributed:
+                torch.save(model.module.state_dict(),best_model_path)
+            else:
+                torch.save(model.state_dict(),best_model_path)
+            patience_counter=0
+            print("best model is saved ")  
+            print("patience is set to zero") 
+
+        else:
+            patience_counter += 1
+            print(f"No improvement ... Patience counter: {patience_counter}/{patience}")
+
+        if patience_counter >= patience:
+            print("Early stopping triggered. Training stopped.")
+            break
+
+
+
         
     return accuracy_val, f1_val
     
