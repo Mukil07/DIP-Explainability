@@ -26,7 +26,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from utils.tsne import plot_tsne as TSNE
 
 from cc_loss import Custom_criterion
-from utils.Brain4Cars import CustomDataset
+from utils.DIPX import CustomDataset
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -41,7 +41,7 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_I3D_2/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_I3D_DIPX/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
@@ -168,20 +168,24 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
 
     train_losses, valid_accuracy = [], []
     print("Started Training")
-    patience = 5 
+    if args.debug:
+        patience =1
+    else:
+        patience =10
+    #patience = 10 
     min_delta = 0.0001  
     best_acc = 0 
     counter = 0 
-    save_dir = f"best_{args.model}_dir"
+    save_dir = f"best_{args.model}_{args.dataset}_dir"
     patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
-    best_model_path = os.path.join(save_dir, f"best_{args.model}.pth") 
+    best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
         all_preds = []
         all_labels = []
         train_loss = 0.0
-        for i, (img1,img2,cls,context) in tqdm(enumerate(train_dataloader)):
+        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
             
             # print(i)
             # img1 size - (1,10,3,224,224)
@@ -209,9 +213,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
 
             
             loss = criterion(outputs, label)
-            context = [list(x) for x in zip(*context)]
-            ccloss = cc_loss(context,outputs)
-            loss = loss+ccloss
+
 
             # uncomment for exponential loss
 
@@ -273,7 +275,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
         LABEL=[]
         with torch.no_grad():
 
-            for i, (img1,img2,cls,context) in tqdm(enumerate(valid_dataloader)): 
+            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
                 b,_,_,_,_=img1.shape
                 
@@ -293,10 +295,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
                 #outputs = outputs.mean(dim=1)
 
                 loss = criterion(outputs, label)
-                context = [list(x) for x in zip(*context)]
-                ccloss = cc_loss(context,outputs)
-
-                loss = loss+ccloss                
+            
                 val_loss_running+=loss
 
                 predicted = torch.argmax(outputs,dim=1)
@@ -375,6 +374,7 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
     parser.add_argument("-e", "--epochs", type = int, help="Number of epochs", default = 1)
     parser.add_argument("--mem_per_layer", type = int, help="Number of memory tokens", default = 3)
+    parser.add_argument("--dataset",  type = str, default = None)
     parser.add_argument("--model",  type = str, default = None)
     parser.add_argument("--debug",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)

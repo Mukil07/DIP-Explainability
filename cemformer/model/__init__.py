@@ -13,12 +13,12 @@ def build_model(args):
     elif args.model == 'memvit_dipx':
         return vit_mem_dipx(num_memories_per_layer= args.mem_per_layer, num_classes=args.num_classes)    
     elif args.model == 'i3d':
-        return InceptionI3d(5, in_channels=3)
+        return InceptionI3d(args.num_classes, in_channels=3)
     elif args.model == 'mae':
         return vit_base_patch16_224()
     elif args.model == 'cbm':
-        return ModelXtoCtoY(args.num_classes, args.n_attributes, args.expand_dim,
-                 args.use_relu, args.use_sigmoid,args.connect_CY)
+        return ModelXtoCtoY(args.num_classes, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY)
     else :
         print("Original DINO VIT is being used here ")
         return vit_base()

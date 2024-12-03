@@ -6,18 +6,18 @@ import torch.nn as nn
 
 class CBM(InceptionI3d):
 
-    def __init__(self, num_classes=5, n_attributes=3, bottleneck=False, expand_dim=0, connect_CY=False):
+    def __init__(self, num_classes=5, n_attributes=17, bottleneck=True, expand_dim=512, connect_CY=False):
 
         super(CBM, self).__init__()
         self.bottleneck = bottleneck
         self.n_attributes = n_attributes
         self.all_fc = nn.ModuleList()
-
+        self.feat = None
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
         else:
             self.cy_fc = None
-
+        
         if self.n_attributes > 0:
             if not bottleneck: #multitasking
                 self.all_fc.append(FC(1024, num_classes, expand_dim))
@@ -44,12 +44,15 @@ class CBM(InceptionI3d):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 x = self._modules[end_point](x) # use _modules to work with dataparallel
-        import pdb;pdb.set_trace()
+        
+        self.feat = self.avg_pool(x).flatten(1)
+        x = self.dropout(self.avg_pool(x))[:,:,0,0,0]
+        
         out = []
-        x= x.permute((0,2,3,4,1))
+        #x= x.permute((0,2,3,4,1))
         for fc in self.all_fc:
             out.append(fc(x))
-        import pdb;pdb.set_trace()
+        
         if self.n_attributes > 0 and not self.bottleneck and self.cy_fc is not None:
             attr_preds = torch.cat(out[1:], dim=1)
             out[0] += self.cy_fc(attr_preds)
@@ -84,12 +87,14 @@ class FC(nn.Module):
         return x
 
 
-def ModelXtoCtoY(num_classes, n_attributes, expand_dim,
+def ModelXtoCtoY(num_classes, n_attributes, bottleneck, expand_dim,
                  use_relu, use_sigmoid,connect_CY):
 
     model1 = CBM(num_classes=num_classes,n_attributes=n_attributes,
-                  bottleneck=False, expand_dim=expand_dim,connect_CY=connect_CY)
+                  bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY)
 
     model2 = MLP(input_dim=n_attributes, num_classes=num_classes, expand_dim=expand_dim)
-
-    return End2EndModel(model1, model2, use_relu, use_sigmoid)
+    
+    model3 = MLP(input_dim=n_attributes, num_classes=15, expand_dim=expand_dim)
+    
+    return End2EndModel(model1, model2, model3, use_relu, use_sigmoid)

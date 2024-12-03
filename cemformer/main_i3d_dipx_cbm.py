@@ -24,9 +24,9 @@ from torchvision.transforms.functional import to_pil_image, to_grayscale
 from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
-
+from utils.plot_confusion import confusion
 from cc_loss import Custom_criterion
-from utils.Brain4Cars import CustomDataset
+from utils.DIPX import CustomDataset
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -41,14 +41,14 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_I3D_2/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_I3D_DIPX_CBM/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
         # Initialize model, criterion, and optimizer
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = build_model(args)
-        
+
         #model.load_state_dict()   
         #model = nn.DataParallel(model, device_ids=[0, 1, 2,3]) 
 
@@ -59,7 +59,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         del ckp['logits.conv3d.bias']
         del ckp['logits.conv3d.weight']
        #del ckp['pos_embed']
-        model.load_state_dict(ckp,strict=False)
+        model.first_model.load_state_dict(ckp,strict=False)
 
         #import pdb;pdb.set_trace()
         # Creating data loaders for training and validation
@@ -72,7 +72,9 @@ def cross_validate_model(args, dataset, n_splits=5):
         # weights = [4, 2, 4, 2, 1]
         # class_weights = torch.FloatTensor(weights).cuda()
         # criterion = nn.CrossEntropyLoss(weight=class_weights)
-        criterion = nn.CrossEntropyLoss()
+        criterion1 = nn.CrossEntropyLoss()
+        criterion2 = nn.BCEWithLogitsLoss()
+        criterion3 = nn.CrossEntropyLoss()
         ### OLDER Settings 
 
         #criterion=torch.nn.CrossEntropyLoss()
@@ -87,7 +89,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         ####
 
         # Train and evaluate the model
-        accuracy, f1 = train(args, train_loader, val_loader, model, criterion, optimizer, device,writer)
+        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
         accuracies.append(accuracy)
         f1_scores.append(f1)
 
@@ -135,7 +137,7 @@ def cc_loss(context,output_logits):
         return cc_loss
 
 
-def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, device,writer):
+def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer):
     model.train()
     # if args.distributed:
     #     for param in model.module.parameters():
@@ -168,20 +170,25 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
 
     train_losses, valid_accuracy = [], []
     print("Started Training")
-    patience = 5 
+    if args.debug:
+        patience =1
+    else:
+        patience =10
+    #patience = 10 
     min_delta = 0.0001  
     best_acc = 0 
     counter = 0 
-    save_dir = f"best_{args.model}_dir"
+    lam1,lam2 = 0.5,0.5
+    save_dir = f"best_{args.model}_{args.dataset}_CBM_dir"
     patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
-    best_model_path = os.path.join(save_dir, f"best_{args.model}.pth") 
+    best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
         all_preds = []
         all_labels = []
         train_loss = 0.0
-        for i, (img1,img2,cls,context) in tqdm(enumerate(train_dataloader)):
+        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
             
             # print(i)
             # img1 size - (1,10,3,224,224)
@@ -203,15 +210,18 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
             img1=img1.type(torch.cuda.FloatTensor)
             img2=img2.type(torch.cuda.FloatTensor)
             #import pdb;pdb.set_trace()
-            outputs,_ = model(img1,img2) #  size - (10,4,768)
-
-            #outputs = outputs.mean(dim=1)
-
+            outputs = model(img1,img2) #  size - (10,4,768)
             
-            loss = criterion(outputs, label)
-            context = [list(x) for x in zip(*context)]
-            ccloss = cc_loss(context,outputs)
-            loss = loss+ccloss
+            feat = model.first_model.feat
+            #outputs = outputs.mean(dim=1)
+            #import pdb;pdb.set_trace()
+            loss1 = criterion1(outputs[0],label)  
+            loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+            loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+            
+            loss = loss1 + loss2 + loss3
+            #loss = criterion(outputs, label)
+
 
             # uncomment for exponential loss
 
@@ -235,7 +245,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
             optimizer.step()
 
             
-            predicted = torch.argmax(outputs,dim=1)
+            predicted = torch.argmax(outputs[0],dim=1)
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
 
@@ -268,12 +278,14 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
         model.eval()
         all_preds = []
         all_labels = []
+        all_preds_gaze = []
+        all_labels_gaze = []
         val_loss_running=0
         FEAT=[]
         LABEL=[]
         with torch.no_grad():
 
-            for i, (img1,img2,cls,context) in tqdm(enumerate(valid_dataloader)): 
+            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
                 b,_,_,_,_=img1.shape
                 
@@ -287,22 +299,29 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
                 #import pdb;pdb.set_trace()
                 img1=img1.type(torch.cuda.FloatTensor)
                 img2=img2.type(torch.cuda.FloatTensor)
-                outputs,feat = model(img1,img2) 
+                outputs = model(img1,img2) 
+                
+                feat = model.first_model.feat
                 #  size - (10,4,768)
 
                 #outputs = outputs.mean(dim=1)
 
-                loss = criterion(outputs, label)
-                context = [list(x) for x in zip(*context)]
-                ccloss = cc_loss(context,outputs)
+                loss1 = criterion1(outputs[0],label)  
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                
+                loss = loss1 + loss2 + loss3
 
-                loss = loss+ccloss                
                 val_loss_running+=loss
 
-                predicted = torch.argmax(outputs,dim=1)
+                predicted = torch.argmax(outputs[0],dim=1)
+                predicted_gaze = torch.argmax(outputs[1],dim=1)
 
                 all_preds.append(predicted.cpu())
                 all_labels.append(label.cpu())
+                all_preds_gaze.append(predicted_gaze.cpu())
+                all_labels_gaze.append(gaze.cpu())     
+
                 FEAT.append(feat.cpu())
                 LABEL.append(label.cpu())
         #ssimport pdb;pdb.set_trace()
@@ -311,23 +330,44 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
 
         all_labels = np.hstack(all_labels)
         all_preds = np.hstack(all_preds)
+        all_labels_gaze = np.hstack(all_preds_gaze)
+        all_preds_gaze = np.hstack(all_preds_gaze)
         
+        #confusion(all_labels, all_preds)
+
         cm = confusion_matrix(all_labels, all_preds)
         fig, ax = plt.subplots(figsize=(8, 6))
         cax = ax.matshow(cm, cmap='Blues')
 
-        # Add color bar
         fig.colorbar(cax)
         ax.set_xlabel('Predicted labels')
         ax.set_ylabel('True labels')
-        ax.set_title('Confusion Matrix (Brain)')
+        ax.set_title('Confusion Matrix (DIPX)')
+
+        ## for gaze classification 
+
+        cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
+        fig2, ax2 = plt.subplots(figsize=(8, 6))
+        cax2 = ax2.matshow(cm2, cmap='Blues')
+
+        fig2.colorbar(cax2)
+        ax2.set_xlabel('Predicted labels')
+        ax2.set_ylabel('True labels')
+        ax2.set_title('Confusion Matrix Gaze')
+
+
 
         # Annotate the cells with the numeric values
         for (i, j), val in np.ndenumerate(cm):
             ax.text(j, i, f'{val}', ha='center', va='center', color='white')
+        
+        for (i, j), val in np.ndenumerate(cm2):
+            ax2.text(j, i, f'{val}', ha='center', va='center', color='white')
 
         # Log the confusion matrix as an image in TensorBoard
         writer.add_figure('Confusion Matrix (Brain)', fig,epoch)
+        writer.add_figure('Confusion Matrix DIPX', fig2,epoch)
+
         writer.add_figure('TSNE', tsne_img,epoch)
 
         val_loss = val_loss_running/len(valid_dataloader)
@@ -336,12 +376,21 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
         
         accuracy_val = accuracy_score(all_labels, all_preds)
         f1_val = f1_score(all_labels, all_preds, average='weighted') #'weighted' or 'macro' s
+        accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
+        f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
+
         print("accuracy and F1",accuracy_val,f1_val) 
+        print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
+
         writer.add_scalar("Loss/Train", epoch_loss, epoch)
         writer.add_scalar("Loss/Validation", val_loss, epoch)
         writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
         writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
-        
+        writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
+        writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
+        writer.add_scalar("F1/Validation", f1_val, epoch)
+        writer.add_scalar("F1/Train", f1_train, epoch)
+
         if  accuracy_val - best_acc  > min_delta:
             best_acc = accuracy_val
             counter = 0  
@@ -375,11 +424,19 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
     parser.add_argument("-e", "--epochs", type = int, help="Number of epochs", default = 1)
     parser.add_argument("--mem_per_layer", type = int, help="Number of memory tokens", default = 3)
+    parser.add_argument("--dataset",  type = str, default = None)
     parser.add_argument("--model",  type = str, default = None)
     parser.add_argument("--debug",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
+    parser.add_argument("--n_attributes", type = int, default= 17)
+    parser.add_argument("--bottleneck", type = bool, default= True)
+    parser.add_argument("--connect_CY", type = bool, default= False)
+    parser.add_argument("--expand_dim", type = int, default= 0)
+    parser.add_argument("--use_relu", type = bool, default= False)
+    parser.add_argument("--use_sigmoid", type = bool, default= False)
+
     args = parser.parse_args()
 
     home_dir = str(args.directory)

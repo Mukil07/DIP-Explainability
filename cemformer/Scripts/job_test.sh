@@ -18,4 +18,4 @@ cd /scratch/mukil/final/cemformer
 
 OMP_NUM_THREADS=1
 
-python main_i3d.py --model i3d --batch 1  
+python main_i3d.py --model i3d --batch 1 --dataset brain
