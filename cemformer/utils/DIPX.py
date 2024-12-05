@@ -54,7 +54,7 @@ def load_rgb_frames(image_dir, vid, start, num):
   return np.asarray(frames, dtype=np.float32)
 
 def decode_video(video_path, start,end, num_frames=16):
-    
+    flag = False
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError(f"Cannot open video {video_path}")
@@ -92,7 +92,9 @@ def decode_video(video_path, start,end, num_frames=16):
     except:
         print(len(frames),start,end,frame_rate)
         print("AAAAAAAAAAAAAA",video_path)
-    return np.array(frames)
+        flag=True
+        
+    return np.array(frames),flag
 
 
 class CustomDataset(Dataset):
@@ -106,7 +108,7 @@ class CustomDataset(Dataset):
 
         self.resize_transform = transforms.Resize((224, 224))
         self.road_path = '/scratch/mukil/dipx/common/front_view_common'
-        self.face_path = '/scratch/mukil/dipx/common/driver_common'
+        self.face_path = '/scratch/mukil/dipx/common/ariagaze_view_common'
         self.time = '/scratch/mukil/dipx/time.csv'
         self.df = pd.read_csv(self.time)
 
@@ -141,34 +143,44 @@ class CustomDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        face_path, road_path, target, gaze, ego = self.data[idx]
+        while True:
+            face_path, road_path, target, gaze, ego = self.data[idx]
 
-        start,end=0,0
-        for i, row in self.df.iterrows():
-            if row['name'] in face_path.split('/')[-1]:
-                start=int(row['start'].split(':')[-1])
-                end=int(row['end'].split(':')[-1])
-                break
-        if end == 0:
-            cap = cv2.VideoCapture(face_path)
-            if not cap.isOpened():
-                raise ValueError(f"Cannot open video {face_path}")
+            start,end=0,0
+            for i, row in self.df.iterrows():
+                if row['name'] in face_path.split('/')[-1]:
+                    start=int(row['start'].split(':')[-1])
+                    end=int(row['end'].split(':')[-1])
+                    break
+            if end == 0:
+                cap = cv2.VideoCapture(face_path)
+                if not cap.isOpened():
+                    raise ValueError(f"Cannot open video {face_path}")
 
-            end = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                end = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        # Load video frames only when accessing an item
-        #import pdb;pdb.set_trace()
-        
-        video_frames1 = decode_video(face_path,start,end)
-        video_frames2 = decode_video(road_path,start,end)
+            # Load video frames only when accessing an item
+            #import pdb;pdb.set_trace()
+            
+            fl1,fl2= False,False
+            video_frames1,fl1 = decode_video(face_path, start, end)
+            video_frames2,fl2 = decode_video(road_path, start, end)
 
-        if self.transform:
-            video_frames1 = self.transform(video_frames1)
-            video_frames2 = self.transform(video_frames2)
-        video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
-        video_frames1 = torch.nn.functional.interpolate(video_frames1, size=(224, 224), mode='bilinear')
-        video_frames2 = torch.nn.functional.interpolate(video_frames2, size=(224, 224), mode='bilinear')
-        return video_frames1,video_frames2,target, gaze, ego 
+            if fl1==True or fl2==True: 
+                
+                idx += 1
+                if idx >= len(self.data):
+                    idx = 0  
+                    print("Reached end of dataset, resetting idx to 0")
+                continue  
+
+            if self.transform:
+                video_frames1 = self.transform(video_frames1)
+                video_frames2 = self.transform(video_frames2)
+            video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
+            video_frames1 = torch.nn.functional.interpolate(video_frames1, size=(224, 224), mode='bilinear')
+            video_frames2 = torch.nn.functional.interpolate(video_frames2, size=(224, 224), mode='bilinear')
+            return video_frames1,video_frames2,target, gaze, ego 
 
     def __len__(self):
         return len(self.data)

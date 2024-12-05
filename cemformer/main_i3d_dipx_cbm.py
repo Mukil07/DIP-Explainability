@@ -25,7 +25,6 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from cc_loss import Custom_criterion
 from utils.DIPX import CustomDataset
 from model import build_model
 
@@ -41,12 +40,13 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_I3D_DIPX_CBM/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_I3D_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
         # Initialize model, criterion, and optimizer
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        #import pdb;pdb.set_trace()
         model = build_model(args)
 
         #model.load_state_dict()   
@@ -54,7 +54,7 @@ def cross_validate_model(args, dataset, n_splits=5):
 
         model.to(device)
         #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-        ckp = torch.load('/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet.pt',map_location=device)
+        ckp = torch.load('/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet_modified.pt',map_location=device)
        # ckp = torch.load(checkpoint,map_location=device)
         del ckp['logits.conv3d.bias']
         del ckp['logits.conv3d.weight']
@@ -179,7 +179,13 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
     best_acc = 0 
     counter = 0 
     lam1,lam2 = 0.5,0.5
-    save_dir = f"best_{args.model}_{args.dataset}_CBM_dir"
+
+    if args.technique: 
+        save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
+
+    else:
+        save_dir = f"best_{args.model}_{args.dataset}_dir"
+        
     patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
     best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
@@ -330,7 +336,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
         all_labels = np.hstack(all_labels)
         all_preds = np.hstack(all_preds)
-        all_labels_gaze = np.hstack(all_preds_gaze)
+        all_labels_gaze = np.hstack(all_labels_gaze)
         all_preds_gaze = np.hstack(all_preds_gaze)
         
         #confusion(all_labels, all_preds)
@@ -365,8 +371,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             ax2.text(j, i, f'{val}', ha='center', va='center', color='white')
 
         # Log the confusion matrix as an image in TensorBoard
-        writer.add_figure('Confusion Matrix (Brain)', fig,epoch)
-        writer.add_figure('Confusion Matrix DIPX', fig2,epoch)
+        writer.add_figure('Confusion Matrix Action', fig,epoch)
+        writer.add_figure('Confusion Matrix GAZE', fig2,epoch)
 
         writer.add_figure('TSNE', tsne_img,epoch)
 
@@ -427,6 +433,7 @@ if __name__ == '__main__':
     parser.add_argument("--dataset",  type = str, default = None)
     parser.add_argument("--model",  type = str, default = None)
     parser.add_argument("--debug",  type = str, default = None)
+    parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
@@ -441,10 +448,6 @@ if __name__ == '__main__':
 
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
-
-    
-    
-    root_dir = '/scratch/mukil/brain4cars_data/face_cam/'
 
     dataset = CustomDataset(debug = args.debug)
     cross_validate_model(args,dataset)

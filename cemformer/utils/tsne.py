@@ -16,7 +16,7 @@ class plot_tsne():
         labels = [ten for unit in labels for ten in unit]
         labels = torch.vstack(labels).detach().cpu().numpy()
         # Apply t-SNE
-        custom_colors = ['red', 'blue', 'green', 'purple', 'orange']
+        custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink']
         tab5_custom = ListedColormap(custom_colors)
         reduced_features = self.tsne.fit_transform(features_np)
         fig, ax = plt.subplots(figsize=(8, 6))

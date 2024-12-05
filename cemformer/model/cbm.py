@@ -1,5 +1,5 @@
-from model.CUB import MLP, End2EndModel
-from model.i3d import InceptionI3d
+from model.cbm_models import MLP, End2EndModel
+from model.i3d_multi import InceptionI3d
 import scipy.stats as stats
 import torch 
 import torch.nn as nn 
@@ -20,11 +20,11 @@ class CBM(InceptionI3d):
         
         if self.n_attributes > 0:
             if not bottleneck: #multitasking
-                self.all_fc.append(FC(1024, num_classes, expand_dim))
+                self.all_fc.append(FC(2048, num_classes, expand_dim))
             for i in range(self.n_attributes):
-                self.all_fc.append(FC(1024, 1, expand_dim))
+                self.all_fc.append(FC(2048, 1, expand_dim))
         else:
-            self.all_fc.append(FC(1024, num_classes, expand_dim))
+            self.all_fc.append(FC(2048, num_classes, expand_dim))
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
@@ -39,12 +39,23 @@ class CBM(InceptionI3d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-    def forward(self, x):
+    def forward(self, x1,x2):
+        
+        #import pdb;pdb.set_trace()
+        for end_point in self.VALID_ENDPOINTS:
+            # if end_point == 'Logits':
+            #    # import pdb;pdb.set_trace()
+            if end_point in self.end_points1:
+                x1 = self._modules[end_point](x1) # use _modules to work with dataparallel
 
         for end_point in self.VALID_ENDPOINTS:
-            if end_point in self.end_points:
-                x = self._modules[end_point](x) # use _modules to work with dataparallel
-        
+            # if end_point == 'Logits':
+            #     #import pdb;pdb.set_trace()
+            if end_point in self.end_points2:
+                x2 = self._modules[end_point](x2) # use _modules to work with dataparallel
+
+        #import pdb;pdb.set_trace()
+        x = torch.cat((x1,x2),dim=1)               
         self.feat = self.avg_pool(x).flatten(1)
         x = self.dropout(self.avg_pool(x))[:,:,0,0,0]
         

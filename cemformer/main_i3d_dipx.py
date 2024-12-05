@@ -25,7 +25,6 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 
-from cc_loss import Custom_criterion
 from utils.DIPX import CustomDataset
 from model import build_model
 
