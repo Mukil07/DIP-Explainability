@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np 
 import matplotlib.pyplot as plt
 
+from utils.plot_confusion import confusion
 import argparse
 
 import torch.optim as optim
@@ -40,14 +41,15 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_I3D_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
         # Initialize model, criterion, and optimizer
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        import pdb;pdb.set_trace()
+
         model = build_model(args)
+
         total_params = sum(p.numel() for p in model.parameters())
         print(f"Total parameters: {total_params}")
 
@@ -55,6 +57,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         print(f"Trainable parameters: {trainable_params}")
 
         model.to(device)
+
         #checkpoint = "weights/dino_vitbase16_pretrain.pth"
         ckp = torch.load('/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet_modified.pt',map_location=device)
        # ckp = torch.load(checkpoint,map_location=device)
@@ -74,9 +77,20 @@ def cross_validate_model(args, dataset, n_splits=5):
         # weights = [4, 2, 4, 2, 1]
         # class_weights = torch.FloatTensor(weights).cuda()
         # criterion = nn.CrossEntropyLoss(weight=class_weights)
-        criterion1 = nn.CrossEntropyLoss()
-        criterion2 = nn.BCEWithLogitsLoss()
-        criterion3 = nn.CrossEntropyLoss()
+        if args.gaze_cbm:
+            criterion1 = nn.CrossEntropyLoss() # action classificaiton 
+            criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
+            criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask) 
+        elif args.ego_cbm or args.multitask :       
+            criterion1 = nn.CrossEntropyLoss() # action classification 
+            criterion2 = nn.BCEWithLogitsLoss() # ego multilabel classsification (bottleneck)
+            criterion3 = nn.CrossEntropyLoss() # gaze classification (multitask)
+
+        else:
+
+            criterion1 = nn.CrossEntropyLoss()
+            criterion2=None
+            criterion3=None
         ### OLDER Settings 
 
         #criterion=torch.nn.CrossEntropyLoss()
@@ -106,37 +120,7 @@ def cross_validate_model(args, dataset, n_splits=5):
     print(f"Average F1 Score: {avg_f1_score:.4f} ± {std_f1_score:.4f}")
     return avg_accuracy, std_accuracy, avg_f1_score, std_f1_score
 
-def cc_loss(context,output_logits):
-        A ={'0':[[1,0,0],[1,0,1],[0,0,0],[0,1,0],[1,1,0]],
-                '1':[[0,1,0],[1,1,0],[0,1,1],[1,1,1]],
-                '2':[[0,0,0],[0,1,0],[1,1,0],[0,1,1],[1,0,0]],
-                '3':[[1,0,0],[1,0,1],[1,1,0],[1,1,1]],
-                '4':None}
-        
-        #c = tuple(map(int,c.split(',')))
-        #import pdb;pdb.set_trace() 
-        output_logits = torch.nn.functional.softmax(output_logits, dim=1)
-        
-        cc_loss=0 
-        count=0
-        for c in context:
-            ctx=np.zeros(3)
-            if c[0].item() == 1:
-                ctx[0]=1
-            if c[0].item() == c[1].item():
-                ctx[1]=1
-            if c[2].item() == 1:
-                ctx[2]=1
 
-            
-            for i in A:
-                if not int(i) == 4: 
-                    if ctx.tolist() in A[i]:
-
-                        cc_loss+= -torch.log(1-output_logits[count][int(i)])
-            count=count+1
-            
-        return cc_loss
 
 
 def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold):
@@ -186,7 +170,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
 
     else:
-        save_dir = f"best_{args.model}_{args.dataset}_dir"
+        save_dir = f"best_{fold}_{args.model}_{args.dataset}_dir"
         
     patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
@@ -198,36 +182,45 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         train_loss = 0.0
         for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
             
-            # print(i)
-            # img1 size - (1,10,3,224,224)
-            #import pdb;pdb.set_trace()
-            
-            # img1= torch.squeeze(img1,dim=0)
-            # img2= torch.squeeze(img2,dim=0)
 
-            b,_,_,_,_=img1.shape
-           # import pdb;pdb.set_trace()
             img1 = img1.to(device)
             img2 = img2.to(device)
 
-            #cls= cls.type(torch.LongTensor)
             label = cls.to(device)
 
             # Forward pass
-            #
+
             img1=img1.type(torch.cuda.FloatTensor)
             img2=img2.type(torch.cuda.FloatTensor)
             #import pdb;pdb.set_trace()
-            outputs = model(img1,img2) #  size - (10,4,768)
+            outputs = model(img1,img2)
             
             feat = model.first_model.feat
-            #outputs = outputs.mean(dim=1)
-            #import pdb;pdb.set_trace()
-            loss1 = criterion1(outputs[0],label)  
-            loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
-            loss3 = lam2*criterion3(outputs[1],gaze.cuda())
             
-            loss = loss1 + loss2 + loss3
+            loss1 = criterion1(outputs[0],label)  
+            #import pdb;pdb.set_trace()
+            if args.gaze_cbm:
+
+                loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
+                loss = loss1 + loss2 + loss3
+            
+            elif args.ego_cbm:
+                    
+                loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss = loss1 + loss2 + loss3
+
+            elif args.multitask:
+
+                loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+
+                loss = loss1 + loss2 + loss3
+            
+            else:
+
+                loss = loss1
             #loss = criterion(outputs, label)
 
 
@@ -258,36 +251,33 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             all_labels.append(label.cpu())
 
             cosine_scheduler.step()
-            ##print("iteration loss ",loss_val)#,torch.nn.functional.softmax(outputs,dim=0))
+
 
         epoch_loss = train_loss/len(train_dataloader)
 
         print(f"epoch {epoch} Loss: {epoch_loss:.4f}")
 
-        # epoch_loss = train_loss/len(train_dataloader)
-        # print(f"step {step} loss is {epoch_loss:.4f}")
         train_losses.append(epoch_loss)
-        #import pdb;pdb.set_trace()
+
         all_preds = np.hstack(all_preds)
         all_labels = np.hstack(all_labels)
-
-
 
         accuracy_train = accuracy_score(all_labels, all_preds)
         f1_train = f1_score(all_labels, all_preds, average='weighted')
 
         print(f"Accuracy(Trainign): {accuracy_train:.4f}, F1 Score: {f1_train:.4f}")
 
-
-
-    # cleanup() 
         ### EVAL 
         print("Started Evaluating")
         model.eval()
+
         all_preds = []
         all_labels = []
         all_preds_gaze = []
         all_labels_gaze = []
+        all_preds_ego = []
+        all_labels_ego = []
+
         val_loss_running=0
         FEAT=[]
         LABEL=[]
@@ -295,40 +285,74 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
             for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
-                b,_,_,_,_=img1.shape
-                
                 img1 = img1.to(device)
                 img2 = img2.to(device)
 
-                #cls= cls.type(torch.LongTensor)
                 label = cls.to(device)
 
                 # Forward pass
-                #import pdb;pdb.set_trace()
+
                 img1=img1.type(torch.cuda.FloatTensor)
                 img2=img2.type(torch.cuda.FloatTensor)
                 outputs = model(img1,img2) 
                 
                 feat = model.first_model.feat
-                #  size - (10,4,768)
 
-                #outputs = outputs.mean(dim=1)
 
                 loss1 = criterion1(outputs[0],label)  
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
-                loss3 = lam2*criterion3(outputs[1],gaze.cuda())
                 
-                loss = loss1 + loss2 + loss3
+                if args.gaze_cbm:
+
+                    loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
+                    loss = loss1 + loss2 + loss3
+                    predicted_gaze = torch.argmax(outputs[2],dim=1)
+                    all_preds_gaze.append(predicted_gaze.cpu())
+                    all_labels_gaze.append(gaze.cpu())          
+                    predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().cpu()
+                    all_preds_ego.append(predicted_ego)
+                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+                elif args.ego_cbm:
+                        
+                    loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss = loss1 + loss2 + loss3
+                    predicted_gaze = torch.argmax(outputs[1],dim=1)
+                    all_preds_gaze.append(predicted_gaze.cpu())
+                    all_labels_gaze.append(gaze.cpu())    
+                    predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
+                    all_preds_ego.append(predicted_ego)
+                   #import pdb;pdb.set_trace()
+                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+                elif args.multitask:
+
+                    loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+
+                    loss = loss1 + loss2 + loss3
+                    #import pdb;pdb.set_trace()
+                    predicted_gaze = torch.argmax(outputs[1],dim=1)
+                    all_preds_gaze.append(predicted_gaze.cpu())
+                    all_labels_gaze.append(gaze.cpu()) 
+                    #import pdb;pdb.set_trace()
+                    predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
+                    all_preds_ego.append(predicted_ego)
+                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+                else:
+
+                    loss = loss1
 
                 val_loss_running+=loss
 
                 predicted = torch.argmax(outputs[0],dim=1)
-                predicted_gaze = torch.argmax(outputs[1],dim=1)
+                
 
                 all_preds.append(predicted.cpu())
                 all_labels.append(label.cpu())
-                all_preds_gaze.append(predicted_gaze.cpu())
-                all_labels_gaze.append(gaze.cpu())     
+ 
 
                 FEAT.append(feat.cpu())
                 LABEL.append(label.cpu())
@@ -338,64 +362,77 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
         all_labels = np.hstack(all_labels)
         all_preds = np.hstack(all_preds)
-        all_labels_gaze = np.hstack(all_labels_gaze)
-        all_preds_gaze = np.hstack(all_preds_gaze)
+
+        if args.multitask or args.gaze_cbm or args.ego_cbm:
+            
+
+            all_labels_gaze = np.hstack(all_labels_gaze)
+            all_preds_gaze = np.hstack(all_preds_gaze)
+            all_labels_ego = np.hstack(all_labels_ego)
+            all_preds_ego = np.hstack(all_preds_ego)    
+            #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
+            confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
+        # for Action Classification 
+
+        confusion(all_labels, all_preds,'action',writer,epoch)
         
-        #confusion(all_labels, all_preds)
-
-        cm = confusion_matrix(all_labels, all_preds)
-        fig, ax = plt.subplots(figsize=(8, 6))
-        cax = ax.matshow(cm, cmap='Blues')
-
-        fig.colorbar(cax)
-        ax.set_xlabel('Predicted labels')
-        ax.set_ylabel('True labels')
-        ax.set_title('Confusion Matrix (DIPX)')
-
-        ## for gaze classification 
-
-        cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
-        fig2, ax2 = plt.subplots(figsize=(8, 6))
-        cax2 = ax2.matshow(cm2, cmap='Blues')
-
-        fig2.colorbar(cax2)
-        ax2.set_xlabel('Predicted labels')
-        ax2.set_ylabel('True labels')
-        ax2.set_title('Confusion Matrix Gaze')
-
-
-
-        # Annotate the cells with the numeric values
-        for (i, j), val in np.ndenumerate(cm):
-            ax.text(j, i, f'{val}', ha='center', va='center', color='white')
         
-        for (i, j), val in np.ndenumerate(cm2):
-            ax2.text(j, i, f'{val}', ha='center', va='center', color='white')
+        #confusion(all_labels_gaze, all_preds_gaze,'ego')
 
-        # Log the confusion matrix as an image in TensorBoard
-        writer.add_figure('Confusion Matrix Action', fig,epoch)
-        writer.add_figure('Confusion Matrix GAZE', fig2,epoch)
+        # cm = confusion_matrix(all_labels, all_preds)
+        # fig, ax = plt.subplots(figsize=(8, 6))
+        # cax = ax.matshow(cm, cmap='Blues')
+
+        # fig.colorbar(cax)
+        # ax.set_xlabel('Predicted labels')
+        # ax.set_ylabel('True labels')
+        # ax.set_title('Confusion Matrix (DIPX)')
+
+        # ## for multitask classification (gaze/ego)
+
+        # cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
+        # fig2, ax2 = plt.subplots(figsize=(8, 6))
+        # cax2 = ax2.matshow(cm2, cmap='Blues')
+
+        # fig2.colorbar(cax2)
+        # ax2.set_xlabel('Predicted labels')
+        # ax2.set_ylabel('True labels')
+        # ax2.set_title('Confusion Matrix Gaze')
+
 
         writer.add_figure('TSNE', tsne_img,epoch)
 
         val_loss = val_loss_running/len(valid_dataloader)
-        # Calculate accuracy and F1 score
-        
-        
+
         accuracy_val = accuracy_score(all_labels, all_preds)
         f1_val = f1_score(all_labels, all_preds, average='weighted') #'weighted' or 'macro' s
-        accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
-        f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
+
+        if args.multitask or args.gaze_cbm or args.ego_cbm:
+
+            accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
+            f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
+            
+            accuracy_val_ego = accuracy_score(all_labels_ego, all_preds_ego)
+            f1_val_ego = f1_score(all_labels_ego, all_preds_ego, average='weighted')
+
+             #'weighted' or 'macro' s
+            print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
+            print("accuracy and F1(GAZE)",accuracy_val_ego,f1_val_ego) 
+
+            writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
+            writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
+            writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
+            writer.add_scalar("F1/Validation(Ego)", f1_val_ego, epoch)
 
         print("accuracy and F1",accuracy_val,f1_val) 
-        print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
+
+        
 
         writer.add_scalar("Loss/Train", epoch_loss, epoch)
         writer.add_scalar("Loss/Validation", val_loss, epoch)
         writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
         writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
-        writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
-        writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
+
         writer.add_scalar("F1/Validation", f1_val, epoch)
         writer.add_scalar("F1/Train", f1_train, epoch)
 
@@ -439,12 +476,16 @@ if __name__ == '__main__':
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
-    parser.add_argument("--n_attributes", type = int, default= 17)
+    parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
     parser.add_argument("--bottleneck", type = bool, default= True)
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
+    parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
+    parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
+    parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
+    parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
 
     args = parser.parse_args()
 

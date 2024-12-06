@@ -4,6 +4,7 @@ from model.vit_mem_dipx import vit_mem_dipx
 from model.i3d import InceptionI3d
 from model.videomae import vit_base_patch16_224
 from model.cbm import ModelXtoCtoY
+from model.cbm_gaze import ModelXtoCtoY_gaze
 def build_model(args):
 
     if args.model == 'vit':
@@ -19,6 +20,11 @@ def build_model(args):
     elif args.model == 'cbm':
         return ModelXtoCtoY(args.num_classes, args.n_attributes, args.bottleneck, args.expand_dim,
                  args.use_relu, args.use_sigmoid, args.connect_CY)
+    
+    elif args.model == 'cbm_gaze':
+
+        return ModelXtoCtoY_gaze(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY)        
     else :
         print("Original DINO VIT is being used here ")
         return vit_base()
