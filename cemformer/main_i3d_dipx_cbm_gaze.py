@@ -77,7 +77,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         # weights = [4, 2, 4, 2, 1]
         # class_weights = torch.FloatTensor(weights).cuda()
         # criterion = nn.CrossEntropyLoss(weight=class_weights)
-        if args.gaze_cbm:
+        if args.gaze_cbm or args.combined_bottleneck:
             criterion1 = nn.CrossEntropyLoss() # action classificaiton 
             criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
             criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask) 
@@ -218,6 +218,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 loss = loss1 + loss2 + loss3
             
+            elif args.combined_bottleneck:
+                #import pdb;pdb.set_trace()
+                loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
+                loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss = loss1 + loss2 + loss3
             else:
 
                 loss = loss1
@@ -341,6 +346,18 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     all_preds_ego.append(predicted_ego)
                     all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
 
+                elif args.combined_bottleneck:
+                    #import pdb;pdb.set_trace()
+                    loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
+                    loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss = loss1 + loss2 + loss3
+                    predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
+                    all_preds_gaze.append(predicted_gaze.cpu())
+                    all_labels_gaze.append(gaze.cpu())          
+                    predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().cpu()
+                    all_preds_ego.append(predicted_ego)
+                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())    
+
                 else:
 
                     loss = loss1
@@ -363,7 +380,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         all_labels = np.hstack(all_labels)
         all_preds = np.hstack(all_preds)
 
-        if args.multitask or args.gaze_cbm or args.ego_cbm:
+        if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
             
 
             all_labels_gaze = np.hstack(all_labels_gaze)
@@ -407,7 +424,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         accuracy_val = accuracy_score(all_labels, all_preds)
         f1_val = f1_score(all_labels, all_preds, average='weighted') #'weighted' or 'macro' s
 
-        if args.multitask or args.gaze_cbm or args.ego_cbm:
+        if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
 
             accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
             f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
@@ -477,7 +494,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-    parser.add_argument("--bottleneck", type = bool, default= True)
+    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
@@ -486,7 +503,7 @@ if __name__ == '__main__':
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
-
+    parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
 
     home_dir = str(args.directory)

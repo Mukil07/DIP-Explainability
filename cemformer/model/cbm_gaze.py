@@ -13,6 +13,7 @@ class CBM(InceptionI3d):
         self.n_attributes = n_attributes
         self.all_fc = nn.ModuleList()
         self.feat = None
+       
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
         else:
@@ -60,8 +61,7 @@ class CBM(InceptionI3d):
         x = self.dropout(self.avg_pool(x))[:,:,0,0,0]
         
         out = []
-        #import pdb;pdb.set_trace()
-        #x= x.permute((0,2,3,4,1))
+   #x= x.permute((0,2,3,4,1))
         if self.n_attributes ==0:
             out.append(x)
             return out
@@ -109,12 +109,17 @@ def ModelXtoCtoY_gaze(num_classes, multitask_classes, multitask, n_attributes, b
                   bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY)
 
     model2 = MLP(input_dim=n_attributes, num_classes=num_classes, expand_dim=expand_dim)
-    
+
     if n_attributes>0:
-        model3 = MLP(input_dim=n_attributes, num_classes=multitask_classes, expand_dim=expand_dim)
-        model4 = None
-        return End2EndModel(model1, model2, model3, model4, multitask,  n_attributes, use_relu, use_sigmoid)
-        
+    
+        if multitask:
+            model3 = MLP(input_dim=n_attributes, num_classes=multitask_classes, expand_dim=expand_dim)
+            model4 = None
+            return End2EndModel(model1, model2, model3, model4, multitask,  n_attributes, use_relu, use_sigmoid)
+        else:
+            model3 = None
+            model4= None
+            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
     else:
         if multitask:
             model2 = MLP(input_dim=2048, num_classes=num_classes, expand_dim=expand_dim)
