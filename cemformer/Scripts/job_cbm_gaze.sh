@@ -28,7 +28,7 @@ cd /scratch/mukil/final/cemformer
 
 # gaze bottleneck 
 python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique gaze\
-    --n_attributes 15 --multitask_classes 17 -gaze_cbm
+    --n_attributes 15 --multitask_classes 17 -gaze_cbm -multitask
 
 # # ego bottleneck
 # python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --debug debug --technique tes2only \
