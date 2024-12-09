@@ -26,7 +26,9 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX import CustomDataset
+from utils.Brain4Cars import CustomDataset
+from utils.loss import cc_loss
+
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -41,7 +43,7 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
@@ -166,6 +168,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
     counter = 0 
     lam1,lam2 = 0.5,0.5
 
+    cc_criterion = cc_loss()
     if args.technique: 
         save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
 
@@ -180,7 +183,9 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         all_preds = []
         all_labels = []
         train_loss = 0.0
-        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
+        ego=None
+        gaze=None
+        for i, (img1,img2,cls,context) in tqdm(enumerate(train_dataloader)):
             
 
             img1 = img1.to(device)
@@ -225,7 +230,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                 loss = loss1 + loss2 + loss3
             else:
 
-                loss = loss1
+                
+                context = [list(x) for x in zip(*context)]
+                ccloss = cc_criterion.calc_loss(context,outputs[0])
+                loss = loss1+ccloss
+
             #loss = criterion(outputs, label)
 
 
@@ -286,9 +295,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         val_loss_running=0
         FEAT=[]
         LABEL=[]
+        gaze=None
+        ego=None
         with torch.no_grad():
 
-            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+            for i, (img1,img2,cls,context) in tqdm(enumerate(valid_dataloader)): 
 
                 img1 = img1.to(device)
                 img2 = img2.to(device)
@@ -360,7 +371,10 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 else:
 
-                    loss = loss1
+                    
+                    context = [list(x) for x in zip(*context)]
+                    ccloss = cc_criterion.calc_loss(context,outputs[0])
+                    loss = loss1+ccloss
 
                 val_loss_running+=loss
 
@@ -392,30 +406,6 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         # for Action Classification 
 
         confusion(all_labels, all_preds,'action',writer,epoch)
-        
-        
-        #confusion(all_labels_gaze, all_preds_gaze,'ego')
-
-        # cm = confusion_matrix(all_labels, all_preds)
-        # fig, ax = plt.subplots(figsize=(8, 6))
-        # cax = ax.matshow(cm, cmap='Blues')
-
-        # fig.colorbar(cax)
-        # ax.set_xlabel('Predicted labels')
-        # ax.set_ylabel('True labels')
-        # ax.set_title('Confusion Matrix (DIPX)')
-
-        # ## for multitask classification (gaze/ego)
-
-        # cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
-        # fig2, ax2 = plt.subplots(figsize=(8, 6))
-        # cax2 = ax2.matshow(cm2, cmap='Blues')
-
-        # fig2.colorbar(cax2)
-        # ax2.set_xlabel('Predicted labels')
-        # ax2.set_ylabel('True labels')
-        # ax2.set_title('Confusion Matrix Gaze')
-
 
         writer.add_figure('TSNE', tsne_img,epoch)
 
@@ -491,20 +481,22 @@ if __name__ == '__main__':
     parser.add_argument("--debug",  type = str, default = None)
     parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
-    parser.add_argument("--dropout", type=float, default=0.45)
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
+    parser.add_argument("--dropout", type=float, default=0.45)
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
+    # all the flags for different modes are here, 
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
+    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
+
     args = parser.parse_args()
 
     home_dir = str(args.directory)
