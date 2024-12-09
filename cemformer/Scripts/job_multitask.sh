@@ -29,7 +29,7 @@ cd /scratch/mukil/final/cemformer
 
 
 # no bottleneck, but multitask 
-python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique multitask02 \
+python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique multitask02 \
     --n_attributes 0 --dropout 0.45 -multitask
 
 # no bottleneck, only action classification 

@@ -29,8 +29,8 @@ cd /scratch/mukil/final/cemformer
 
 
 # ego bottleneck
-python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
-    --n_attributes 17 --multitask_classes 15 --dropout 0.45  -ego_cbm -multitask
+python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
+    --n_attributes 17 --multitask_classes 15 --dropout 0.45  -ego_cbm -multitask -bottleneck
 
 
 #torchrun --nproc_per_node=1 --master_addr localhost --master_port 16784 main_dipx.py --model memvit_dipx --num_classes 7 --mem_per_layer 2 --batch 1 

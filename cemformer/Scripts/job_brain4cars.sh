@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=5G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/I3D_BRAIN4CARS.txt
+#SBATCH --output=output_DIPX/I3D_BRAIN4CARS_02.txt
 #SBATCH --nodelist=gnode097
 #SBATCH --partition=ihub
 

@@ -375,7 +375,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                 LABEL.append(label.cpu())
         #ssimport pdb;pdb.set_trace()
         tsne = TSNE()
-        tsne_img = tsne.plot(FEAT,LABEL)
+        tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
 
         all_labels = np.hstack(all_labels)
         all_preds = np.hstack(all_preds)
@@ -494,12 +494,15 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
+
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
+    parser.add_argument("--dropout", type = float, default= 0.45)
+    
+    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")

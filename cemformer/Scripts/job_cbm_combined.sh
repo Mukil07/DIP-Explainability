@@ -6,7 +6,7 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/I3D_DIPX_COMBINED_BOTTLENECK_02.txt
-#SBATCH --nodelist=gnode097
+#SBATCH --nodelist=gnode096
 #SBATCH --partition=ihub
 
 ### VERY IMPORTANT 
@@ -32,7 +32,7 @@ cd /scratch/mukil/final/cemformer
 
 
 # combined bottleneck
-python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx\
+python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx\
     --technique combined_bottleneck02 --n_attributes 32 --dropout 0.45 -combined_bottleneck -bottleneck
 
 
