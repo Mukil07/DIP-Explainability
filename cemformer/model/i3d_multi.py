@@ -220,7 +220,7 @@ class InceptionI3d(nn.Module):
         Raises:
           ValueError: if `final_endpoint` is not recognized.
         """
-
+        #import pdb;pdb.set_trace()
         if final_endpoint not in self.VALID_ENDPOINTS:
             raise ValueError('Unknown final endpoint %s' % final_endpoint)
 

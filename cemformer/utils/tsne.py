@@ -10,13 +10,16 @@ class plot_tsne():
         
         self.tsne = TSNE(perplexity=perplexity,n_components=n_comp, random_state=random_state)
 
-    def plot(self,features,labels):
+    def plot(self,features,labels,mode):
         #import pdb;pdb.set_trace()
         features_np = torch.vstack(features).detach().cpu().numpy()
         labels = [ten for unit in labels for ten in unit]
         labels = torch.vstack(labels).detach().cpu().numpy()
         # Apply t-SNE
-        custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink']
+        if mode == 'dipx':
+            custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink']
+        else:
+            custom_colors = ['red', 'blue', 'green', 'purple', 'orange']
         tab5_custom = ListedColormap(custom_colors)
         reduced_features = self.tsne.fit_transform(features_np)
         fig, ax = plt.subplots(figsize=(8, 6))

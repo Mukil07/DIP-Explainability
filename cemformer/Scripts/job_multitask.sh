@@ -3,9 +3,9 @@
 #SBATCH -A mobility_arfs
 #SBATCH -c 10
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=5G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/I3D_DIPX_GAZE_BOTTLENECK_multiscale.txt
+#SBATCH --output=output_DIPX/I3D_DIPX_MULTITASK_02.txt
 #SBATCH --nodelist=gnode096
 #SBATCH --partition=ihub
 
@@ -29,8 +29,8 @@ cd /scratch/mukil/final/cemformer
 
 
 # no bottleneck, but multitask 
-python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique multitask \
-    --n_attributes 0 -multitask
+python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique multitask02 \
+    --n_attributes 0 --dropout 0.45 -multitask
 
 # no bottleneck, only action classification 
 

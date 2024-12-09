@@ -1,4 +1,4 @@
-from model.cbm_models_gaze import MLP, End2EndModel
+from model.cbm_models import MLP, End2EndModel
 from model.i3d_multi import InceptionI3d
 import scipy.stats as stats
 import torch 
@@ -13,7 +13,6 @@ class CBM(InceptionI3d):
         self.n_attributes = n_attributes
         self.all_fc = nn.ModuleList()
         self.feat = None
-       
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
         else:
@@ -61,10 +60,7 @@ class CBM(InceptionI3d):
         x = self.dropout(self.avg_pool(x))[:,:,0,0,0]
         
         out = []
-   #x= x.permute((0,2,3,4,1))
-        if self.n_attributes ==0:
-            out.append(x)
-            return out
+        #x= x.permute((0,2,3,4,1))
         for fc in self.all_fc:
             out.append(fc(x))
         
@@ -102,33 +98,14 @@ class FC(nn.Module):
         return x
 
 
-def ModelXtoCtoY_gaze(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
+def ModelXtoCtoY(num_classes, n_attributes, bottleneck, expand_dim,
                  use_relu, use_sigmoid,connect_CY):
 
     model1 = CBM(num_classes=num_classes,n_attributes=n_attributes,
                   bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY)
 
     model2 = MLP(input_dim=n_attributes, num_classes=num_classes, expand_dim=expand_dim)
-
-    if n_attributes>0:
     
-        if multitask:
-            model3 = MLP(input_dim=n_attributes, num_classes=multitask_classes, expand_dim=expand_dim)
-            model4 = None
-            return End2EndModel(model1, model2, model3, model4, multitask,  n_attributes, use_relu, use_sigmoid)
-        else:
-            model3 = None
-            model4= None
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
-    else:
-        if multitask:
-            model2 = MLP(input_dim=2048, num_classes=num_classes, expand_dim=expand_dim)
-            model3 = MLP(input_dim=2048, num_classes=15, expand_dim=expand_dim) # gaze head 
-            model4 = MLP(input_dim=2048, num_classes=17, expand_dim=expand_dim) # ego head 
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
-
-        else:
-            model2 = MLP(input_dim=2048, num_classes=num_classes, expand_dim=expand_dim)
-            model3 = None
-            model4 = None
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
+    model3 = MLP(input_dim=n_attributes, num_classes=15, expand_dim=expand_dim)
+    
+    return End2EndModel(model1, model2, model3, use_relu, use_sigmoid)

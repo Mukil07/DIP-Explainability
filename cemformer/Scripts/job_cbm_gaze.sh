@@ -3,9 +3,9 @@
 #SBATCH -A mobility_arfs
 #SBATCH -c 10
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=5G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/I3D_DIPX_GAZE_BOTTLENECK_gaze.txt
+#SBATCH --output=output_DIPX/I3D_DIPX_GAZE_BOTTLENECK_02.txt
 #SBATCH --nodelist=gnode096
 #SBATCH --partition=ihub
 
@@ -27,8 +27,8 @@ cd /scratch/mukil/final/cemformer
 #     --n_attributes 15 --multitask_classes 17 --num_classes 7 --dataset dipx --technique test1only --debug debug -gaze_cbm
 
 # gaze bottleneck 
-python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique gaze\
-    --n_attributes 15 --multitask_classes 17 -gaze_cbm -multitask
+python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --technique gaze02 \
+    --n_attributes 15 --multitask_classes 17 --dropout 0.45 -gaze_cbm -multitask
 
 # # ego bottleneck
 # python main_i3d_dipx_cbm_gaze.py --model cbm_gaze --batch 1 --num_classes 7 --dataset dipx --debug debug --technique tes2only \
