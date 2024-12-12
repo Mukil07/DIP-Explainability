@@ -3,7 +3,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
-
+print("hi")
 class plot_tsne():
 
     def __init__(self,perplexity=10,random_state=42,n_comp=2):
