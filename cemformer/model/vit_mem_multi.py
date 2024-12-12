@@ -257,10 +257,13 @@ class Adapter(nn.Module):
         self.feat = None
 
         self.pos_drop = nn.Dropout(p=drop_rate)
-        self.memory_cls_token = nn.Parameter(torch.randn(dim))
+
+        self.memory_cls_token_1 = nn.Parameter(torch.randn(dim))
+        self.memory_cls_token_2 = nn.Parameter(torch.randn(dim))
        # import pdb;pdb.set_trace()
-        self.memories_per_layer = nn.Parameter(torch.randn(num_memories_per_layer, dim))
-       
+        self.memories_per_layer_1 = nn.Parameter(torch.randn(num_memories_per_layer, dim))
+        self.memories_per_layer_2 = nn.Parameter(torch.randn(num_memories_per_layer, dim))
+
         #self.pos_embed1 = nn.Parameter(torch.zeros(1, (num_patches), embed_dim))
         #self.pos_embed2 = nn.Parameter(torch.zeros(1, (num_patches), embed_dim))
 
@@ -269,12 +272,15 @@ class Adapter(nn.Module):
         # specialized attention mask to preserve the output of the original ViT
         # it allows the memory CLS token to attend to all other tokens (and the learnable memory layer tokens), but not vice versa        
 
-        attn_mask = torch.ones((num_patches*2, num_patches*2), dtype = torch.bool)
+        attn_mask = torch.ones((num_patches, num_patches), dtype = torch.bool)
         attn_mask = F.pad(attn_mask, (1, num_memories_per_layer), value = False)  # main tokens cannot attend to learnable memories per layer
         attn_mask = F.pad(attn_mask, (0, 0, 1, 0), value = True)                  # memory CLS token can attend to everything
         self.attn_mask = attn_mask
-        self.vit = VisionTransformer( patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+        self.vit_1 = VisionTransformer( patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
                                     qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_mem = 3,drop_rate = drop_rate, attn_drop_rate= attn_drop_rate)
+        self.vit_2 = VisionTransformer( patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+                                    qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_mem = 3,drop_rate = drop_rate, attn_drop_rate= attn_drop_rate)
+        
         self.head_gaze = nn.Sequential(
             nn.LayerNorm(dim),
             nn.Linear(dim, 15)
@@ -309,7 +315,8 @@ class Adapter(nn.Module):
 
         trunc_normal_(self.pos_embed1, std=0.02)
         trunc_normal_(self.pos_embed2, std=0.02)
-        trunc_normal_(self.memory_cls_token, std=0.02)
+        trunc_normal_(self.memory_cls_token_1, std=0.02)
+        trunc_normal_(self.memory_cls_token_2, std=0.02)
 
     def interpolate_pos_encoding(self, x, w, h,pe):
         npatch = x.shape[1] - 1
@@ -350,7 +357,7 @@ class Adapter(nn.Module):
         embed_img2 = embed_img2 + self.pos_embed2_
 
         # add the [CLS] token to the embed patch tokens
-        x= torch.cat((embed_img1,embed_img2),dim=2)
+        #x= torch.cat((embed_img1,embed_img2),dim=2)
 
         # cls_tokens = self.cls_token.expand(B, -1, -1)
         # x = torch.cat((cls_tokens,concatenated_img), dim=1)
@@ -358,7 +365,7 @@ class Adapter(nn.Module):
         # # add positional encoding to each token
         # x = x + self.interpolate_pos_encoding(x, w, h)
 
-        return self.pos_drop(x)
+        return self.pos_drop(embed_img1), self.pos_drop(embed_img2)
     
     def forward(self, img1,img2):
         device = img1.device
@@ -369,29 +376,34 @@ class Adapter(nn.Module):
         # tokens2 = self.patch_embed(img2)
 
         # concatenated_img= torch.cat((tokens1,tokens2),dim=1)
-        
-        concatenated_img = self.prepare_tokens(img1,img2) # (2,16,392,768)
+        #import pdb;pdb.set_trace()
+        img1, img2 = self.prepare_tokens(img1,img2) # (2,16,392,768)
        
         # add task specific memory tokens
-
-        memory_cls_tokens = repeat(self.memory_cls_token, 'd -> batch b 1 d', batch = batch_size,b = b)
-        tokens = torch.cat((memory_cls_tokens, concatenated_img), dim = 2)        
+        #import pdb;pdb.set_trace()
+        memory_cls_tokens_1 = repeat(self.memory_cls_token_1, 'd -> batch b 1 d', batch = batch_size,b = b)
+        memory_cls_tokens_2 = repeat(self.memory_cls_token_2, 'd -> batch b 1 d', batch = batch_size,b = b)
+        tokens_1 = torch.cat((memory_cls_tokens_1, img1), dim = 2)     
+        tokens_2 = torch.cat((memory_cls_tokens_2, img2), dim = 2)     
 
         # pass memories along with image tokens through transformer for attending
         self.attn_mask = self.attn_mask.to(device)
-        out = self.vit(tokens, memories = self.memories_per_layer, attn_mask = self.attn_mask)
-
+        #import pdb;pdb.set_trace()
+        out_1 = self.vit_1(tokens_1, memories = self.memories_per_layer_1, attn_mask = self.attn_mask)
+        out_2 = self.vit_2(tokens_2, memories = self.memories_per_layer_2, attn_mask = self.attn_mask)
         # extract memory CLS tokens
-        
-        memory_cls_tokens = out[:, :,0]
+        #import pdb;pdb.set_trace()
+        memory_cls_tokens_1 = out_1[:, :,0]
+        memory_cls_tokens_2 = out_2[:, :,0]
 
+        final_cls = torch.cat((memory_cls_tokens_1,memory_cls_tokens_2),dim=1) ## CHECK WITH DIM=2 also .. 
         # pass through task specific adapter head
         
-        self.feat = memory_cls_tokens.mean(dim=1)
+        self.feat = final_cls.mean(dim=1)
         #return self.mlp_head(memory_cls_tokens),self.head_gaze(memory_cls_tokens),self.head_ego(memory_cls_tokens)
-        return [self.mlp_head(memory_cls_tokens.mean(dim=1))]
+        return [self.mlp_head(final_cls.mean(dim=1))]
 
-def vit_mem(patch_size=16, num_memories_per_layer= 10, num_classes=5,drop=0.5, **kwargs):
+def vit_mem_multi(patch_size=16, num_memories_per_layer= 10, num_classes=5,drop=0.5, **kwargs):
 
     #import pdb;pdb.set_trace()
     model = Adapter(patch_size=patch_size, num_memories_per_layer = num_memories_per_layer, num_classes = num_classes, drop_rate=drop,attn_drop_rate=drop)

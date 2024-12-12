@@ -6,7 +6,7 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/I3D_DIPX_NO_BOTTLENECK_02.txt
-#SBATCH --nodelist=gnode096
+#SBATCH --nodelist=gnode097
 #SBATCH --partition=ihub
 
 

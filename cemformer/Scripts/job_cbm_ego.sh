@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH -A mobility_arfs
-#SBATCH -c 10
+#SBATCH -c 8
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=5G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/I3D_DIPX_EGO_BOTTLENECK_02.txt
 #SBATCH --nodelist=gnode097
@@ -29,8 +29,10 @@ cd /scratch/mukil/final/cemformer
 
 
 # ego bottleneck
+# python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
+#     --n_attributes 17 --multitask_classes 15 --dropout 0.45  -ego_cbm -multitask -bottleneck
 python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
-    --n_attributes 17 --multitask_classes 15 --dropout 0.45  -ego_cbm -multitask -bottleneck
+    --n_attributes 17 --multitask_classes 15 --dropout 0.45 -ego_cbm -multitask -bottleneck
 
 
 #torchrun --nproc_per_node=1 --master_addr localhost --master_port 16784 main_dipx.py --model memvit_dipx --num_classes 7 --mem_per_layer 2 --batch 1 
