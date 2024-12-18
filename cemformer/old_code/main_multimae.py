@@ -24,8 +24,7 @@ from torchvision.transforms.functional import to_pil_image, to_grayscale
 from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
-
-from cc_loss import Custom_criterion
+from utils.loss import cc_loss
 from utils.Brain4Cars import CustomDataset
 from model import build_model
 
@@ -41,48 +40,32 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_CEM/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_MAE/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
         # Initialize model, criterion, and optimizer
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model = build_model(args)
 
-        #model = build_model(args)
-
-        #class_labels = sorted({str(path).split("/")[2] for path in all_video_file_paths})
-        label2id={"rturn": 0, "rchange": 1, "lturn": 2, "lchange": 3, "endaction": 4}
-        #label2id = {label: i for i, label in enumerate(class_labels)}
-        id2label = {i: label for label, i in label2id.items()}
-        model_ckpt = "MCG-NJU/videomae-base"
-
-        config = VideoMAEConfig.from_pretrained("MCG-NJU/videomae-base")
-        config.image_size = 224          # Change spatial resolution
-        config.patch_size = 16           # Patch size
-        config.num_frames = 16           # Number of video frames
-        config.hidden_size = 768         # Hidden layer size
-        config.num_attention_heads = 12
-        #config.num_labels = 5  # Attention heads
-        config.dropout = 0.4  
-
-        image_processor = VideoMAEImageProcessor.from_pretrained(model_ckpt)
-        model = VideoMAEForVideoClassification.from_pretrained(
-            model_ckpt,
-            label2id=label2id,
-            id2label=id2label,
-            ignore_mismatched_sizes=True,
-            #config=config,  # provide this in case you're planning to fine-tune an already fine-tuned checkpoint
-        )
         model.to(device)
+            
+        for param in model.parameters():
+            param.requires_grad = False
+        for layer in model.model1.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.model2.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.classifier.parameters():
+            param.requires_grad = True
 
-        
-        # ckp = torch.load('/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet.pt',map_location=device)
-        #ckp = torch.load(checkpoint,map_location=device)
-        # del ckp['logits.conv3d.bias']
-        # del ckp['logits.conv3d.weight']
-       # del ckp['pos_embed']
-        #model.load_state_dict(ckp,strict=False)
-        #import pdb;pdb.set_trace()
+        total_params = sum(p.numel() for p in model.parameters())
+        print(f"Total parameters: {total_params}")
+
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Trainable parameters: {trainable_params}")
 
         train_subset = torch.utils.data.Subset(dataset, train_idx)
         val_subset = torch.utils.data.Subset(dataset, val_idx)
@@ -90,19 +73,20 @@ def cross_validate_model(args, dataset, n_splits=5):
         train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch)
         val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch)
 
-        # weights = [4, 2, 4, 2, 1]
-        # class_weights = torch.FloatTensor(weights).cuda()
-        # criterion=torch.nn.CrossEntropyLoss(weight=class_weights)
-
         criterion = torch.nn.CrossEntropyLoss()
-        #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
         
         ### TESTING SGD 
-        learning_rate = 0.01
-        momentum = 0.9
-        weight_decay = 0.001
+        # learning_rate = 0.01
+        # momentum = 0.9
+        # weight_decay = 0.001
 
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+
+        ### Testing Adam 
+        base_learning_rate = 5e-5
+        weight_decay = 0.05
+        optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=base_learning_rate, weight_decay=weight_decay)
+
         ####
         accuracy, f1 = train(args, train_loader, val_loader, model, criterion, optimizer, device,writer)
         accuracies.append(accuracy)
@@ -152,35 +136,15 @@ def cc_loss(context,output_logits):
 
 def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, device,writer):
     model.train()
-    # if args.distributed:
-    #     for param in model.module.parameters():
-    #         param.requires_grad = False
-    #     #import pdb;pdb.set_trace()
-    #     for block in model.module.vit.blocks:
-    #         for param in block.attn.parameters():
-    #             param.requires_grad = True
 
-    #     for param in model.module.mlp_head.parameters():
-    #         param.requires_grad = True
-    # else:
-
-    #     for param in model.parameters():
-    #         param.requires_grad = False
-    #     #import pdb;pdb.set_trace()
-    #     for block in model.vit.blocks:
-    #         for param in block.attn.parameters():
-    #             param.requires_grad = True
-
-    #     for param in model.mlp_head.parameters():
-    #         param.requires_grad = True        
 
     #warmup_scheduler = LambdaLR(optimizer, warmup_linear)
 
     # Iterate through the dataloader
     T=1
     num_epochs=100
-    cosine_scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
-
+    #cosine_scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
     train_losses, valid_accuracy = [], []
     print("Started Training")
     patience = 5 
@@ -190,7 +154,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
     save_dir = "best_model_dir"
 
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
-    best_model_path = os.path.join(save_dir, f"best_model{args.mem_per_layer}.pth") 
+    best_model_path = os.path.join(save_dir, f"best_mae.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
         all_preds = []
@@ -211,10 +175,15 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
             img2=img2.type(torch.cuda.FloatTensor)
             #import pdb;pdb.set_trace()
 
-            inputs = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-            inputs = {k: v for k, v in inputs.items()}
-            outputs = model(**inputs) #  size - (10,4,768)
-            outputs = outputs.logits
+            inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
+            inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
+            inputs1 = {k: v for k, v in inputs1.items()}
+            inputs2 = {k: v for k, v in inputs2.items()}
+
+      
+            outputs = model(inputs1,inputs2)
+          
+        
 
             loss = criterion(outputs, label)
             context = [list(x) for x in zip(*context)]
@@ -247,7 +216,7 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
 
-            cosine_scheduler.step()
+            scheduler.step()
             ##print("iteration loss ",loss_val)#,torch.nn.functional.softmax(outputs,dim=0))
 
         epoch_loss = train_loss/len(train_dataloader)
@@ -300,10 +269,15 @@ def train(args, train_dataloader, valid_dataloader,model,criterion, optimizer, d
                 #import pdb;pdb.set_trace()
                 img1=img1.type(torch.cuda.FloatTensor)
                 img2=img2.type(torch.cuda.FloatTensor)
-                inputs = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-                inputs = {k: v for k, v in inputs.items()}
-                outputs = model(**inputs) #  size - (10,4,768)
-                outputs = outputs.logits
+                
+                inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
+                inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
+                inputs1 = {k: v for k, v in inputs1.items()}
+                inputs2 = {k: v for k, v in inputs2.items()}
+
+        
+                outputs = model(inputs1,inputs2)
+          
 
                 loss = criterion(outputs, label)
                 context = [list(x) for x in zip(*context)]
@@ -373,17 +347,6 @@ if __name__ == '__main__':
 
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
-
-    
-    
-    root_dir = '/scratch/mukil/brain4cars_data/face_cam/'
-
-    # train_transforms = transforms.Compose([videotransforms.DriverFocusCrop(),
-    #                                        ToTensor()
-    # ])
-    # test_transforms = transforms.Compose([videotransforms.DriverCenterCrop(224),
-    #                                       ToTensor()
-    #                                     ])
 
     dataset = CustomDataset(debug = args.debug)
     cross_validate_model(args,dataset)

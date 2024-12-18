@@ -4,6 +4,7 @@ from model.vit_mem_multi import vit_mem_multi
 from model.vit_mem_dipx import vit_mem_dipx
 from model.i3d import InceptionI3d
 from model.videomae import vit_base_patch16_224
+from model.multi_mae import Multi_Mae
 #from model.cbm import ModelXtoCtoY
 from model.cbm import ModelXtoCtoY
 def build_model(args):
@@ -27,7 +28,12 @@ def build_model(args):
     elif args.model == 'cbm':
 
         return ModelXtoCtoY(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
-                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)        
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
+    
+    elif args.model == 'multimae':
+
+        return Multi_Mae(args.num_classes,args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)       
     else :
         print("Original DINO VIT is being used here ")
         return vit_base()

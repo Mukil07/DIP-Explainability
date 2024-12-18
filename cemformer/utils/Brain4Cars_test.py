@@ -15,16 +15,6 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader, random_split
 import cv2
 
-def visualize(frames):
-    save_dir = 'visualize'
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    
-    for i,img in enumerate(frames):
-        
-        img = Image.fromarray(img)
-        save = os.path.join(save_dir,f'img_{i}.jpg')
-        img.save(save)
 def video_to_tensor(pic):
     """Convert a ``numpy.ndarray`` to tensor.
     Converts a numpy.ndarray (T x H x W x C)
@@ -75,7 +65,7 @@ def decode_video(video_path, num_frames=16):
         if not ret:
             break
 
-        # frame = (frame/255.)*2 - 1
+        frame = (frame/255.)*2 - 1
         frames.append(frame)
 
         if len(frames) == num_frames:
@@ -106,19 +96,7 @@ class CustomDataset(Dataset):
 
         self._load_data()
 
-    def flip(self,target):
 
-        if target == 0:
-            return 2
-        elif target == 2:
-            return 0
-        elif target == 1:
-            return 3
-        elif target == 3:
-            return 1
-        else:
-            return target
-        
     def _load_data(self):
         with open(self.csv_path, 'r') as csv_file:
             reader = csv.reader(csv_file)
@@ -148,18 +126,11 @@ class CustomDataset(Dataset):
         #import pdb;pdb.set_trace()
         video_frames1 = decode_video(video_path1)
         video_frames2 = decode_video(road_path)
-        #import pdb;pdb.set_trace()
-        if random.random() < 0.5:  
-            video_frames1 = np.flip(video_frames1, axis=2)  # Flip width axis (W)
-            video_frames2 = np.flip(video_frames2, axis=2) 
-            target = self.flip(target)
-        
+        import pdb;pdb.set_trace()
         if self.transform:
             video_frames1 = self.transform(video_frames1)
             video_frames2 = self.transform(video_frames2)
-
-        import pdb;pdb.set_trace()
-        video_frames1,video_frames2 = video_to_tensor(video_frames1.copy()),video_to_tensor(video_frames2.copy())
+        video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
         video_frames1 = torch.nn.functional.interpolate(video_frames1, size=(224, 224), mode='bilinear')
         video_frames2 = torch.nn.functional.interpolate(video_frames2, size=(224, 224), mode='bilinear')
         return video_frames1,video_frames2,target, context

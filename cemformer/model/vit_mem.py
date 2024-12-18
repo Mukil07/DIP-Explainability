@@ -235,7 +235,7 @@ class Adapter(nn.Module):
         *,
         patch_size=16,
         embed_dim=768,
-        depth=12,
+        depth=6,
         in_chans=3,
         img_size=[224],
         num_memories_per_layer = 10,
@@ -273,7 +273,7 @@ class Adapter(nn.Module):
         attn_mask = F.pad(attn_mask, (1, num_memories_per_layer), value = False)  # main tokens cannot attend to learnable memories per layer
         attn_mask = F.pad(attn_mask, (0, 0, 1, 0), value = True)                  # memory CLS token can attend to everything
         self.attn_mask = attn_mask
-        self.vit = VisionTransformer( patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+        self.vit = VisionTransformer( patch_size=patch_size, embed_dim=768, depth=6, num_heads=6, mlp_ratio=4,
                                     qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_mem = 3,drop_rate = drop_rate, attn_drop_rate= attn_drop_rate)
         self.head_gaze = nn.Sequential(
             nn.LayerNorm(dim),

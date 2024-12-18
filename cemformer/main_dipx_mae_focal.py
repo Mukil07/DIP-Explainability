@@ -26,9 +26,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.Brain4Cars import CustomDataset
-from utils.loss import cc_loss
-
+from utils.DIPX import CustomDataset
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -43,50 +41,60 @@ def cross_validate_model(args, dataset, n_splits=5):
     for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
 
         # Initialize model, criterion, and optimizer
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        #import pdb;pdb.set_trace()
+
         model = build_model(args)
 
         total_params = sum(p.numel() for p in model.parameters())
         print(f"Total parameters: {total_params}")
 
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"Trainable parameters: {trainable_params}")
+
 
         model.to(device)
 
-        checkpoint = "weights/dino_vitbase16_pretrain.pth"
-        
-        ckp = torch.load(checkpoint,map_location=device)
-        del ckp['pos_embed']
-
-        if args.model == "memvit":
-
-            model.load_state_dict(ckp,strict=False)
-        elif args.model == "memvit_multi":
-            model.vit_1.load_state_dict(ckp,strict=False)
-            model.vit_2.load_state_dict(ckp,strict=False)
-        else:
-            raise ValueError("Please give the correct model name for cemformer model")
-        
+        #import pdb;pdb.set_trace()
+        # Creating data loaders for training and validation
         train_subset = torch.utils.data.Subset(dataset, train_idx)
         val_subset = torch.utils.data.Subset(dataset, val_idx)
-        train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch)
-        val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch)
+        train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True)
+        val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch,pin_memory=True)
 
-
+        for param in model.parameters():
+            param.requires_grad = False
+        for layer in model.first_model.model1.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.first_model.model2.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.sec_model.parameters():
+            param.requires_grad = True
+            
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Trainable parameters: {trainable_params}")
         # weights = [4, 2, 4, 2, 1]
         # class_weights = torch.FloatTensor(weights).cuda()
         # criterion = nn.CrossEntropyLoss(weight=class_weights)
+       # import pdb;pdb.set_trace()
+
         if args.gaze_cbm or args.combined_bottleneck:
-            criterion1 = nn.CrossEntropyLoss() # action classificaiton 
+            #criterion1 = nn.CrossEntropyLoss() 
+            criterion1 = torch.hub.load(
+                'adeelh/pytorch-multi-class-focal-loss',
+                model='FocalLoss',
+                alpha=torch.tensor([.05, .104, .071, .122, .099, .098, .449]),
+                gamma=2,
+                force_reload=False
+            ).cuda()# action classificaiton 
             criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
-            criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask) 
+            criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask)
+
+            
         elif args.ego_cbm or args.multitask :       
             criterion1 = nn.CrossEntropyLoss() # action classification 
             criterion2 = nn.BCEWithLogitsLoss() # ego multilabel classsification (bottleneck)
@@ -103,18 +111,18 @@ def cross_validate_model(args, dataset, n_splits=5):
         #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
         
         ### TESTING SGD 
-        learning_rate = 0.0001
-        momentum = 0.9
-        beta1 = 0.9
-        beta2 = 0.999
-        decay_rate = 0.99
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(beta1, beta2))
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-        #optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        # learning_rate = 0.001
+        # momentum = 0.9
+        # weight_decay = 0.001
+
+        # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
         ####
+        base_learning_rate = 5e-5
+        weight_decay = 0.05
+        optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
 
         # Train and evaluate the model
-        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold, lr_scheduler)
+        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold)
         accuracies.append(accuracy)
         f1_scores.append(f1)
 
@@ -132,36 +140,12 @@ def cross_validate_model(args, dataset, n_splits=5):
 
 
 
-def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold,lr_scheduler):
+def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold):
     model.train()
-    # if args.distributed:
-    #     for param in model.module.parameters():
-    #         param.requires_grad = False
-    #     #import pdb;pdb.set_trace()
-    #     for block in model.module.vit.blocks:
-    #         for param in block.attn.parameters():
-    #             param.requires_grad = True
 
-    #     for param in model.module.mlp_head.parameters():
-    #         param.requires_grad = True
-    # else:
-
-    #     for param in model.parameters():
-    #         param.requires_grad = False
-    #     #import pdb;pdb.set_trace()
-    #     for block in model.vit.blocks:
-    #         for param in block.attn.parameters():
-    #             param.requires_grad = True
-
-    #     for param in model.mlp_head.parameters():
-    #         param.requires_grad = True        
-
-    #warmup_scheduler = LambdaLR(optimizer, warmup_linear)
-
-    # Iterate through the dataloader
     T=1
     num_epochs=100
-    cosine_scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
 
     train_losses, valid_accuracy = [], []
     print("Started Training")
@@ -175,7 +159,6 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
     counter = 0 
     lam1,lam2 = 0.5,0.5
 
-    cc_criterion = cc_loss()
     if args.technique: 
         save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
 
@@ -190,10 +173,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         all_preds = []
         all_labels = []
         train_loss = 0.0
-        ego=None
-        gaze=None
-        feat= None
-        for i, (img1,img2,cls,context) in tqdm(enumerate(train_dataloader)):
+        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
             
 
             img1 = img1.to(device)
@@ -206,44 +186,44 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             img1=img1.type(torch.cuda.FloatTensor)
             img2=img2.type(torch.cuda.FloatTensor)
             #import pdb;pdb.set_trace()
+            inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
+            inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
+            inputs1 = {k: v for k, v in inputs1.items()}
+            inputs2 = {k: v for k, v in inputs2.items()}
+
+            outputs = model(inputs1,inputs2)
             #import pdb;pdb.set_trace()
-            outputs = model(img1,img2)
-           # import pdb;pdb.set_trace()
-            feat = model.feat
-            
+            feat = model.first_model.feat
+            #import pdb;pdb.set_trace()
             loss1 = criterion1(outputs[0],label)  
             #import pdb;pdb.set_trace()
             if args.gaze_cbm:
 
-                loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss3 = lam2*criterion3(outputs[1],torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
                 loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
                 loss = loss1 + loss2 + loss3
             
             elif args.ego_cbm:
                     
                 loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
                 loss = loss1 + loss2 + loss3
 
             elif args.multitask:
 
                 loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
 
                 loss = loss1 + loss2 + loss3
             
             elif args.combined_bottleneck:
                 #import pdb;pdb.set_trace()
                 loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
-                loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
                 loss = loss1 + loss2 + loss3
             else:
 
-                
-                context = [list(x) for x in zip(*context)]
-                ccloss = cc_criterion.calc_loss(context,outputs[0])
-                loss = loss1+ccloss
-
+                loss = loss1
             #loss = criterion(outputs, label)
 
 
@@ -272,8 +252,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             predicted = torch.argmax(outputs[0],dim=1)
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
-            lr_scheduler.step()
-           #cosine_scheduler.step()
+
+            scheduler.step()
 
 
         epoch_loss = train_loss/len(train_dataloader)
@@ -304,11 +284,9 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         val_loss_running=0
         FEAT=[]
         LABEL=[]
-        gaze=None
-        ego=None
         with torch.no_grad():
 
-            for i, (img1,img2,cls,context) in tqdm(enumerate(valid_dataloader)): 
+            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
                 img1 = img1.to(device)
                 img2 = img2.to(device)
@@ -319,9 +297,15 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 img1=img1.type(torch.cuda.FloatTensor)
                 img2=img2.type(torch.cuda.FloatTensor)
-                outputs = model(img1,img2) 
-                
-                feat = model.feat
+
+                inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
+                inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
+                inputs1 = {k: v for k, v in inputs1.items()}
+                inputs2 = {k: v for k, v in inputs2.items()}
+
+                outputs = model(inputs1,inputs2)
+                #import pdb;pdb.set_trace()
+                feat = model.first_model.feat
 
 
                 loss1 = criterion1(outputs[0],label)  
@@ -336,12 +320,12 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     all_labels_gaze.append(gaze.cpu())          
                     predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().cpu()
                     all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
 
                 elif args.ego_cbm:
                         
                     loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
                     loss = loss1 + loss2 + loss3
                     predicted_gaze = torch.argmax(outputs[1],dim=1)
                     all_preds_gaze.append(predicted_gaze.cpu())
@@ -349,12 +333,12 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
                     all_preds_ego.append(predicted_ego)
                    #import pdb;pdb.set_trace()
-                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
 
                 elif args.multitask:
 
                     loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
 
                     loss = loss1 + loss2 + loss3
                     #import pdb;pdb.set_trace()
@@ -364,26 +348,23 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     #import pdb;pdb.set_trace()
                     predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
                     all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
 
                 elif args.combined_bottleneck:
                     #import pdb;pdb.set_trace()
                     loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
-                    loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                    loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
                     loss = loss1 + loss2 + loss3
                     predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
                     all_preds_gaze.append(predicted_gaze.cpu())
                     all_labels_gaze.append(gaze.cpu())          
                     predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().cpu()
                     all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())    
+                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())    
 
                 else:
 
-                    
-                    context = [list(x) for x in zip(*context)]
-                    ccloss = cc_criterion.calc_loss(context,outputs[0])
-                    loss = loss1+ccloss
+                    loss = loss1
 
                 val_loss_running+=loss
 
@@ -415,6 +396,30 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         # for Action Classification 
 
         confusion(all_labels, all_preds,'action',writer,epoch)
+        
+        
+        #confusion(all_labels_gaze, all_preds_gaze,'ego')
+
+        # cm = confusion_matrix(all_labels, all_preds)
+        # fig, ax = plt.subplots(figsize=(8, 6))
+        # cax = ax.matshow(cm, cmap='Blues')
+
+        # fig.colorbar(cax)
+        # ax.set_xlabel('Predicted labels')
+        # ax.set_ylabel('True labels')
+        # ax.set_title('Confusion Matrix (DIPX)')
+
+        # ## for multitask classification (gaze/ego)
+
+        # cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
+        # fig2, ax2 = plt.subplots(figsize=(8, 6))
+        # cax2 = ax2.matshow(cm2, cmap='Blues')
+
+        # fig2.colorbar(cax2)
+        # ax2.set_xlabel('Predicted labels')
+        # ax2.set_ylabel('True labels')
+        # ax2.set_title('Confusion Matrix Gaze')
+
 
         writer.add_figure('TSNE', tsne_img,epoch)
 
@@ -493,19 +498,19 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-    parser.add_argument("--dropout", type=float, default=0.45)
+
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
-    # all the flags for different modes are here, 
+    parser.add_argument("--dropout", type = float, default= 0.45)
+    
+    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
-    parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
-
     args = parser.parse_args()
 
     home_dir = str(args.directory)

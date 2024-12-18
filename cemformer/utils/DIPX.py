@@ -76,6 +76,12 @@ def decode_video(video_path, start,end, num_frames=16):
     interval = max(total_frames // num_frames, 1)
 
     for i in range(int(start_time), int(end_time), int(interval)):
+        x =  random.randint(0,int(interval)-1)
+        sum_ = i+x
+        if sum_ <= int(end_time):
+            i = sum_
+        else:
+            i=i
         cap.set(cv2.CAP_PROP_POS_FRAMES, i)
         ret, frame = cap.read()
         if not ret:
@@ -120,7 +126,18 @@ class CustomDataset(Dataset):
 
         self._load_data()
 
+    def flip(self,target):
 
+        if target == 2:
+            return 4
+        elif target == 4:
+            return 2
+        elif target == 3:
+            return 5
+        elif target == 5:
+            return 3
+        else:
+            return target 
     def _load_data(self):
         with open(self.csv_path, 'r') as csv_file:
             reader = csv.reader(csv_file)
@@ -134,7 +151,9 @@ class CustomDataset(Dataset):
                     target = int(row[1])
                     gaze = int(row[2])
                     ego = row[3]
+                    
                     ego = list(map(int, ego.strip('[]').split()))
+                    
                     #ego = [ego for i in ego]
 
                     self.data.append((face_path, road_path, target, gaze, ego))
@@ -173,13 +192,21 @@ class CustomDataset(Dataset):
                     idx = 0  
                     print("Reached end of dataset, resetting idx to 0")
                 continue  
-
+            
+            if random.random() < 0.5:  
+                video_frames1 = np.flip(video_frames1, axis=2)  # Flip width axis (W)
+                video_frames2 = np.flip(video_frames2, axis=2) 
+                target = self.flip(target)
+                video_frames1,video_frames2 = video_to_tensor(video_frames1.copy()),video_to_tensor(video_frames2.copy())
+            else:
+                video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
             if self.transform:
                 video_frames1 = self.transform(video_frames1)
                 video_frames2 = self.transform(video_frames2)
-            video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
+            
             video_frames1 = torch.nn.functional.interpolate(video_frames1, size=(224, 224), mode='bilinear')
             video_frames2 = torch.nn.functional.interpolate(video_frames2, size=(224, 224), mode='bilinear')
+            
             return video_frames1,video_frames2,target, gaze, ego 
 
     def __len__(self):
