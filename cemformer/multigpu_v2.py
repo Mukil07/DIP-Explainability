@@ -332,223 +332,185 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
             print(f"Accuracy (Training): {accuracy_train:.4f}, F1 Score: {f1_train:.4f}")
 
-        ### EVAL 
+            ### EVAL 
 
-        print("Started Evaluating")
-        model.eval()
+            print("Started Evaluating")
+            model.eval()
 
-        # inside inference loop
-        all_preds = []
-        all_labels = []
-        all_preds_gaze = []
-        all_labels_gaze = []
-        all_preds_ego = []
-        all_labels_ego = []
+            all_preds = []
+            all_labels = []
+            all_preds_gaze = []
+            all_labels_gaze = []
+            all_preds_ego = []
+            all_labels_ego = []
 
-        # outside inference loop
-        all_preds_local=[]
-        all_labels_local=[]
-        all_preds_gaze_local=[]
-        all_labels_gaze_local=[]
-        all_preds_ego_local=[]
-        all_labels_ego_local=[]
+            val_loss_running=0
+            FEAT=[]
+            LABEL=[]
+            with torch.no_grad():
 
-        val_loss_running=0
-        FEAT=[]
-        LABEL=[]
-        with torch.no_grad():
+                for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
-            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+                    img1 = img1.to(device)
+                    img2 = img2.to(device)
 
-                img1 = img1.to(device)
-                img2 = img2.to(device)
+                    label = cls.to(device)
 
-                label = cls.to(device)
+                    # Forward pass
 
-                # Forward pass
+                    img1=img1.type(torch.cuda.FloatTensor)
+                    img2=img2.type(torch.cuda.FloatTensor)
 
-                img1=img1.type(torch.cuda.FloatTensor)
-                img2=img2.type(torch.cuda.FloatTensor)
+                    inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
+                    inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
+                    inputs1 = {k: v for k, v in inputs1.items()}
+                    inputs2 = {k: v for k, v in inputs2.items()}
 
-                inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-                inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
-                inputs1 = {k: v for k, v in inputs1.items()}
-                inputs2 = {k: v for k, v in inputs2.items()}
-
-                outputs = model(inputs1,inputs2)
-                #import pdb;pdb.set_trace()
-                if args.distributed:
-
+                    outputs = model(inputs1,inputs2)
+                    #import pdb;pdb.set_trace()
                     feat = model.module.first_model.feat
-                else:
-                    feat = model.first_model.feat
 
 
-                loss1 = criterion1(outputs[0],label)  
+                    loss1 = criterion1(outputs[0],label)  
+                    
+                    if args.gaze_cbm:
+
+                        loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(outputs[2],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())          
+                        predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
+
+                    elif args.ego_cbm:
+                            
+                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(outputs[1],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())    
+                        predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                    #import pdb;pdb.set_trace()
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
+
+                    elif args.multitask:
+
+                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+
+                        loss = loss1 + loss2 + loss3
+                        #import pdb;pdb.set_trace()
+                        predicted_gaze = torch.argmax(outputs[1],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu()) 
+                        #import pdb;pdb.set_trace()
+                        predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
+
+                    elif args.combined_bottleneck:
+                        #import pdb;pdb.set_trace()
+                        loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
+                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())          
+                        predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())    
+
+                    else:
+
+                        loss = loss1
+
+                    val_loss_running+=loss
+
+                    predicted = torch.argmax(outputs[0],dim=1)
+                    
+
+                    all_preds.append(predicted.cpu())
+                    all_labels.append(label.cpu())
+    
+
+                    FEAT.append(feat.cpu())
+                    LABEL.append(label.cpu())
+            #ssimport pdb;pdb.set_trace()
+            tsne = TSNE()
+            tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
+
+            all_labels = np.hstack(all_labels)
+            all_preds = np.hstack(all_preds)
+
+            if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
                 
-                if args.gaze_cbm:
 
-                    loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
-                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda().to(device))
-                    loss = loss1 + loss2 + loss3
-                    predicted_gaze = torch.argmax(outputs[2],dim=1)
-                    all_preds_gaze.append(predicted_gaze.to(device))
-                    all_labels_gaze.append(gaze.to(device))          
-                    predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().to(device)
-                    all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+                all_labels_gaze = np.hstack(all_labels_gaze)
+                all_preds_gaze = np.hstack(all_preds_gaze)
+                all_labels_ego = np.hstack(all_labels_ego)
+                all_preds_ego = np.hstack(all_preds_ego)    
+                #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
+                confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
+            # for Action Classification 
 
-                elif args.ego_cbm:
-                        
-                    loss3 = lam2*criterion3(outputs[1],gaze.cuda().to(device))
-                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                    loss = loss1 + loss2 + loss3
-                    predicted_gaze = torch.argmax(outputs[1],dim=1)
-                    all_preds_gaze.append(predicted_gaze.to(device))
-                    all_labels_gaze.append(gaze.to(device))    
-                    predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().to(device)
-                    all_preds_ego.append(predicted_ego)
-                   #import pdb;pdb.set_trace()
-                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+            confusion(all_labels, all_preds,'action',writer,epoch)
+            
+            
+            #confusion(all_labels_gaze, all_preds_gaze,'ego')
 
-                elif args.multitask:
+            # cm = confusion_matrix(all_labels, all_preds)
+            # fig, ax = plt.subplots(figsize=(8, 6))
+            # cax = ax.matshow(cm, cmap='Blues')
 
-                    loss3 = lam2*criterion3(outputs[1],gaze.cuda().to(device))
-                    loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+            # fig.colorbar(cax)
+            # ax.set_xlabel('Predicted labels')
+            # ax.set_ylabel('True labels')
+            # ax.set_title('Confusion Matrix (DIPX)')
 
-                    loss = loss1 + loss2 + loss3
-                    #import pdb;pdb.set_trace()
-                    predicted_gaze = torch.argmax(outputs[1],dim=1)
-                    all_preds_gaze.append(predicted_gaze.to(device))
-                    all_labels_gaze.append(gaze.to(device)) 
-                    #import pdb;pdb.set_trace()
-                    predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().to(device)
-                    all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+            # ## for multitask classification (gaze/ego)
 
-                elif args.combined_bottleneck:
-                    #import pdb;pdb.set_trace()
-                    loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda().to(device))
-                    loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                    loss = loss1 + loss2 + loss3
-                    predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
-                    all_preds_gaze.append(predicted_gaze.to(device))
-                    all_labels_gaze.append(gaze.to(device))          
-                    predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().to(device)
-                    all_preds_ego.append(predicted_ego)
-                    all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))    
+            # cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
+            # fig2, ax2 = plt.subplots(figsize=(8, 6))
+            # cax2 = ax2.matshow(cm2, cmap='Blues')
 
-                else:
-
-                    loss = loss1
-
-                val_loss_running+=loss
-
-                predicted = torch.argmax(outputs[0],dim=1)
-                
-
-                all_preds.append(predicted.to(device))
-                all_labels.append(label.to(device))
- 
-
-                FEAT.append(feat.cpu())
-                LABEL.append(label.cpu())
-
-        #ssimport pdb;pdb.set_trace()
-        running_loss = torch.tensor([val_loss_running], device=device)       
-        if dist.get_rank() == 0 :
-
-            val_loss = running_loss.item()/len(valid_dataloader)
-            print(f" epoch {epoch} Loss: {val_loss:.4f}")
-
-        tsne = TSNE()
-        tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
-
-        # At the end of the epoch, gather data across all processes (Action Classification)
-        all_preds_local = torch.cat(all_preds).to(device)
-        all_labels_local = torch.cat(all_labels).to(device)
-        all_preds_gathered = [torch.zeros_like(all_preds_local) for _ in range(dist.get_world_size())]
-        all_labels_gathered = [torch.zeros_like(all_labels_local) for _ in range(dist.get_world_size())]
+            # fig2.colorbar(cax2)
+            # ax2.set_xlabel('Predicted labels')
+            # ax2.set_ylabel('True labels')
+            # ax2.set_title('Confusion Matrix Gaze')
 
 
-        dist.barrier()
-        dist.all_gather(all_preds_gathered, all_preds_local)
-        dist.all_gather(all_labels_gathered, all_labels_local)
+            writer.add_figure('TSNE', tsne_img,epoch)
 
-        if dist.get_rank() == 0:
-            all_preds = torch.cat(all_preds_gathered).cpu().numpy()
-            all_labels = torch.cat(all_labels_gathered).cpu().numpy()
+            val_loss = val_loss_running/len(valid_dataloader)
 
             accuracy_val = accuracy_score(all_labels, all_preds)
-            f1_val = f1_score(all_labels, all_preds, average='weighted')
+            f1_val = f1_score(all_labels, all_preds, average='weighted') #'weighted' or 'macro' s
 
-            print(f"Accuracy (Validation): {accuracy_val:.4f}, F1 Score: {f1_val:.4f}")
+            if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
 
-
-        # all_labels = np.hstack(all_labels)
-        # all_preds = np.hstack(all_preds)
-
-        if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-            
-                    # At the end of the epoch, gather data across all processes (Gaze Classification)
-            all_preds_gaze_local = torch.cat(all_preds_gaze).to(device)
-            all_labels_gaze_local = torch.cat(all_labels_gaze).to(device)
-            all_preds_gathered_gaze = [torch.zeros_like(all_preds_gaze_local) for _ in range(dist.get_world_size())]
-            all_labels_gathered_gaze = [torch.zeros_like(all_labels_gaze_local) for _ in range(dist.get_world_size())]
-            # At the end of the epoch, gather data across all processes (Ego Classification)
-            all_preds_ego_local = torch.cat(all_preds_ego).to(device)
-            all_labels_ego_local = torch.cat(all_labels_ego).to(device)
-            all_preds_gathered_ego = [torch.zeros_like(all_preds_ego_local) for _ in range(dist.get_world_size())]
-            all_labels_gathered_ego = [torch.zeros_like(all_labels_ego_local) for _ in range(dist.get_world_size())]
-            dist.barrier()
-            dist.all_gather(all_preds_gathered_gaze, all_preds_gaze_local)
-            dist.all_gather(all_labels_gathered_gaze, all_labels_gaze_local)
-            dist.all_gather(all_preds_gathered_ego, all_preds_ego_local)
-            dist.all_gather(all_labels_gathered_ego, all_labels_ego_local)
-
-        #     all_labels_gaze = np.hstack(all_labels_gaze)
-        #     all_preds_gaze = np.hstack(all_preds_gaze)
-        #     all_labels_ego = np.hstack(all_labels_ego)
-        #     all_preds_ego = np.hstack(all_preds_ego)    
-        #     #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
-        #     confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
-        # # for Action Classification 
-
-        # confusion(all_labels, all_preds,'action',writer,epoch)
-        # writer.add_figure('TSNE', tsne_img,epoch)
-
-
-        # accuracy_val = accuracy_score(all_labels, all_preds)
-        # f1_val = f1_score(all_labels, all_preds, average='weighted') #'weighted' or 'macro' s
-
-        if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-
-            if dist.get_rank() == 0:    
-                    
-                all_preds_gaze = torch.cat(all_preds_gathered_gaze).cpu().numpy()
-                all_labels_gaze = torch.cat(all_labels_gathered_gaze).cpu().numpy()
-                all_preds_ego = torch.cat(all_preds_gathered_ego).cpu().numpy()
-                all_labels_ego = torch.cat(all_labels_gathered_ego).cpu().numpy()
-                    
                 accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
-                f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted')
-
+                f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
+                
                 accuracy_val_ego = accuracy_score(all_labels_ego, all_preds_ego)
                 f1_val_ego = f1_score(all_labels_ego, all_preds_ego, average='weighted')
 
                 #'weighted' or 'macro' s
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
-                print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
+                print("accuracy and F1(GAZE)",accuracy_val_ego,f1_val_ego) 
 
                 writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
                 writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
                 writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
                 writer.add_scalar("F1/Validation(Ego)", f1_val_ego, epoch)
 
-        #print("accuracy and F1",accuracy_val,f1_val) 
+            print("accuracy and F1",accuracy_val,f1_val) 
 
-        
-        if dist.get_rank() == 0: 
+            
 
             writer.add_scalar("Loss/Train", epoch_loss, epoch)
             writer.add_scalar("Loss/Validation", val_loss, epoch)
@@ -573,10 +535,10 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                 patience_counter += 1
                 print(f"No improvement ... Patience counter: {patience_counter}/{patience}")
 
-            dist.barrier()
             if patience_counter >= patience:
                 print("Early stopping triggered. Training stopped.")
                 break
+
 
     return accuracy_val, f1_val
     
