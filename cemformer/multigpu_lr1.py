@@ -104,14 +104,14 @@ def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
         print(f"Trainable parameters: {trainable_params}")
 
         if args.gaze_cbm or args.combined_bottleneck:
-            #criterion1 = nn.CrossEntropyLoss() 
-            criterion1 = torch.hub.load(
-                'adeelh/pytorch-multi-class-focal-loss',
-                model='FocalLoss',
-                alpha=torch.tensor([.05, .104, .071, .122, .099, .098, .449]),
-                gamma=2,
-                force_reload=False
-            ).to(device)# action classificaiton 
+            criterion1 = nn.CrossEntropyLoss() 
+            # criterion1 = torch.hub.load(
+            #     'adeelh/pytorch-multi-class-focal-loss',
+            #     model='FocalLoss',
+            #     alpha=torch.tensor([.05, .104, .071, .122, .099, .098, .449]),
+            #     gamma=2,
+            #     force_reload=False
+            # ).to(device)# action classificaiton 
             criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
             criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask)
 
@@ -138,8 +138,9 @@ def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
 
         # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
         ####
-        base_learning_rate = 5e-5
-        weight_decay = 0.05
+        base_learning_rate = args.learning_rate
+        weight_decay = args.weight_decay
+        
         if args.distributed:
             optimizer = optim.AdamW(model.module.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
         else:
@@ -451,30 +452,6 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
             confusion(all_labels, all_preds,'action',writer,epoch)
             
-            
-            #confusion(all_labels_gaze, all_preds_gaze,'ego')
-
-            # cm = confusion_matrix(all_labels, all_preds)
-            # fig, ax = plt.subplots(figsize=(8, 6))
-            # cax = ax.matshow(cm, cmap='Blues')
-
-            # fig.colorbar(cax)
-            # ax.set_xlabel('Predicted labels')
-            # ax.set_ylabel('True labels')
-            # ax.set_title('Confusion Matrix (DIPX)')
-
-            # ## for multitask classification (gaze/ego)
-
-            # cm2 = confusion_matrix(all_labels_gaze, all_preds_gaze)
-            # fig2, ax2 = plt.subplots(figsize=(8, 6))
-            # cax2 = ax2.matshow(cm2, cmap='Blues')
-
-            # fig2.colorbar(cax2)
-            # ax2.set_xlabel('Predicted labels')
-            # ax2.set_ylabel('True labels')
-            # ax2.set_title('Confusion Matrix Gaze')
-
-
             writer.add_figure('TSNE', tsne_img,epoch)
 
             val_loss = val_loss_running/len(valid_dataloader)
@@ -544,6 +521,8 @@ if __name__ == '__main__':
     parser.add_argument("--mem_per_layer", type = int, help="Number of memory tokens", default = 3)
     parser.add_argument("--dataset",  type = str, default = None)
     parser.add_argument("--model",  type = str, default = None)
+    parser.add_argument("--learning_rate",  type = float, default = 0.001)
+    parser.add_argument("--weight_decay",  type = float, default = 0.001)
     parser.add_argument("--debug",  type = str, default = None)
     parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)

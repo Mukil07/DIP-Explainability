@@ -35,9 +35,11 @@ cd /scratch/mukil/final/cemformer
 
 
 # combined bottleneck
+# python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx\
+#     --technique combined_bottleneck02 --n_attributes 32 --dropout 0.7 -combined_bottleneck -bottleneck
 python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx\
-    --technique combined_bottleneck02 --n_attributes 32 --dropout 0.45 -combined_bottleneck -bottleneck
-
+    --technique combined_bottleneck02 --n_attributes 32 --dropout 0.7 -combined_bottleneck -bottleneck
+# dropout 0.45 works best 
 
 #torchrun --nproc_per_node=1 --master_addr localhost --master_port 16784 main_dipx.py --model memvit_dipx --num_classes 7 --mem_per_layer 2 --batch 1 
 #python main_i3d_dipx.py --model i3d --batch 1 --num_classes 7 --dataset dipx

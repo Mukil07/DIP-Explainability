@@ -6,7 +6,7 @@ from matplotlib.colors import ListedColormap
 print("hi")
 class plot_tsne():
 
-    def __init__(self,perplexity=1,random_state=42,n_comp=2):
+    def __init__(self,perplexity=10,random_state=42,n_comp=2):
         
         self.tsne = TSNE(perplexity=perplexity,n_components=n_comp, random_state=random_state)
 
