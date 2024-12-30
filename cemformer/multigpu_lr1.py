@@ -40,7 +40,7 @@ from torch.distributed import init_process_group, destroy_process_group
 import torch.distributed as dist
 def ddp_setup(args, rank,world_size):
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "25623"
+    os.environ["MASTER_PORT"] = str(args.port)
     init_process_group(backend="nccl", rank=rank, world_size = world_size)
 
 def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
@@ -54,7 +54,7 @@ def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
         ddp_setup(args, rank, world_size)
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -527,6 +527,7 @@ if __name__ == '__main__':
     parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
+    parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
 
