@@ -40,7 +40,7 @@ from torch.distributed import init_process_group, destroy_process_group
 import torch.distributed as dist
 def ddp_setup(args, rank,world_size):
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "25623"
+    os.environ["MASTER_PORT"] = str(args.port)
     init_process_group(backend="nccl", rank=rank, world_size = world_size)
 
 def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
@@ -138,7 +138,7 @@ def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
 
         # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
         ####
-        base_learning_rate = 5e-5
+        base_learning_rate = args.learning_rate
         weight_decay = 0.05
         if args.distributed:
             optimizer = optim.AdamW(model.module.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
@@ -543,11 +543,14 @@ if __name__ == '__main__':
     parser.add_argument("-e", "--epochs", type = int, help="Number of epochs", default = 1)
     parser.add_argument("--mem_per_layer", type = int, help="Number of memory tokens", default = 3)
     parser.add_argument("--dataset",  type = str, default = None)
+    parser.add_argument("--learning_rate",  type = float, default = 0.001)
+    parser.add_argument("--weight_decay",  type = float, default = 0.001)
     parser.add_argument("--model",  type = str, default = None)
     parser.add_argument("--debug",  type = str, default = None)
     parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
+    parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
 

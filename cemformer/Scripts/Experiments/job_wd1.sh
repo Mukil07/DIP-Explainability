@@ -1,0 +1,36 @@
+#!/bin/bash
+
+#SBATCH -A wasilone11
+#SBATCH -c 18
+#SBATCH --gres=gpu:2
+#SBATCH --mem-per-cpu=2G
+#SBATCH --time=4-00:00:00
+#SBATCH --output=output_DIPX/MAE_DIPX_wd1.txt
+#SBATCH --nodelist=gnode078
+#SBATCH --partition=long
+
+
+PORT=$((RANDOM % 55 + 12345))
+while ss -tuln | grep -q ":$PORT"; do
+  PORT=$((RANDOM % 55 + 12345))
+done
+echo "Free port found: $PORT"
+
+source activate sf
+module load u18/cuda/11.7
+
+cd /scratch/mukil/cemformer
+
+TECH=wd1
+MODEL=multimae
+DATASET=dipx
+
+best=best_${MODEL}_${DATASET}_${TECH}_dir
+runs=runs_${MODEL}_${DATASET}_${TECH}
+
+rm -rf $best
+rm -rf $runs
+
+python multigpu_lr1.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
+    --weight_decay 0.5 --learning_rate 0.0001 --port $PORT \
+    --technique $TECH  --dropout 0.65 --n_attributes 0 -distributed 
