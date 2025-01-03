@@ -202,13 +202,13 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         all_labels_local=[]
 
         train_loss = 0.0
-        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
+        for i, (img1,img2,clas,gaze,ego) in tqdm(enumerate(train_dataloader)):
             
 
             img1 = img1.to(device)
             img2 = img2.to(device)
 
-            label = cls.to(device)
+            label = clas.to(device)
 
             # Forward pass
 
@@ -340,12 +340,12 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             LABEL=[]
             with torch.no_grad():
 
-                for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+                for i, (img1,img2,clas,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
                     img1 = img1.to(device)
                     img2 = img2.to(device)
 
-                    label = cls.to(device)
+                    label = clas.to(device)
 
                     # Forward pass
 
@@ -357,7 +357,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     inputs1 = {k: v for k, v in inputs1.items()}
                     inputs2 = {k: v for k, v in inputs2.items()}
 
-                    outputs = model(inputs1,inputs2)
+                    outputs = model.module(inputs1,inputs2)
                     #import pdb;pdb.set_trace()
                     feat = model.module.first_model.feat
 
