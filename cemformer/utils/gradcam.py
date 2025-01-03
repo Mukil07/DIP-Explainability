@@ -3,11 +3,33 @@
 
 import matplotlib.pyplot as plt
 
-import slowfast.datasets.utils as data_utils
+
 import torch
 import torch.nn.functional as F
-from slowfast.visualization.utils import get_layer
 
+def normalize(img):
+    im = ((img - img.min()) / (img.max() - img.min()))
+    return im
+
+def revert_tensor_normalize(tensor, mean, std):
+
+    if type(mean) == list:
+        mean = torch.tensor(mean)
+    if type(std) == list:
+        std = torch.tensor(std)
+    tensor = tensor * std
+    tensor = tensor + mean
+    return tensor
+
+def get_layer(model, layer_name):
+    
+    layer_ls = layer_name.split("/")
+    prev_module = model
+    for layer in layer_ls:
+        prev_module = prev_module._modules[layer]
+    
+   # prev_module = prev_module[-2].layernorm_before
+    return prev_module
 
 class GradCAM:
     """
@@ -32,7 +54,7 @@ class GradCAM:
         # Run in eval mode.
         self.model.eval()
         self.target_layers = target_layers
-
+        
         self.gradients = {}
         self.activations = {}
         self.colormap = plt.get_cmap(colormap)
@@ -53,8 +75,9 @@ class GradCAM:
 
         def get_activations(module, input, output):
             self.activations[layer_name] = output.clone().detach()
-
+        
         target_layer = get_layer(self.model, layer_name=layer_name)
+        #target_layer = 
         target_layer.register_forward_hook(get_activations)
         target_layer.register_backward_hook(get_gradients)
 
@@ -76,11 +99,13 @@ class GradCAM:
                 each corresponding input.
             preds (tensor): shape (n_instances, n_class). Model predictions for `inputs`.
         """
+        #import pdb;pdb.set_trace()
         assert (
             len(inputs) == len(self.target_layers)
         ), "Must register the same number of target layers as the number of input pathways."
-        input_clone = [inp.clone() for inp in inputs]
-        preds = self.model(input_clone)
+        #input_clone = [inp.clone() for inp in inputs]
+        preds = self.model(inputs[0],inputs[1])
+        preds = preds[0]
 
         if labels is None:
             score = torch.max(preds, dim=-1)[0]
@@ -91,18 +116,25 @@ class GradCAM:
 
         self.model.zero_grad()
         score = torch.sum(score)
+        score =score.requires_grad_(True)
         score.backward()
         localization_maps = []
         for i, inp in enumerate(inputs):
+            #import pdb;pdb.set_trace()
+            inp = inp['pixel_values'].permute((0,2,1,3,4))
             _, _, T, H, W = inp.size()
-
+            
             gradients = self.gradients[self.target_layers[i]]
             activations = self.activations[self.target_layers[i]]
+            # gradients = gradients.unsqueeze(0).unsqueeze(1)
+            # activations = activations.unsqueeze(0).unsqueeze(1)
+
             B, C, Tg, _, _ = gradients.size()
 
             weights = torch.mean(gradients.view(B, C, Tg, -1), dim=3)
 
             weights = weights.view(B, C, Tg, 1, 1)
+           
             localization_map = torch.sum(weights * activations, dim=1, keepdim=True)
             localization_map = F.relu(localization_map)
             localization_map = F.interpolate(
@@ -144,24 +176,30 @@ class GradCAM:
             preds (tensor): shape (n_instances, n_class). Model predictions for `inputs`.
         """
         result_ls = []
+        #import pdb;pdb.set_trace()
         localization_maps, preds = self._calculate_localization_map(
             inputs, labels=labels
         )
+        #import pdb;pdb.set_trace()
         for i, localization_map in enumerate(localization_maps):
             # Convert (B, 1, T, H, W) to (B, T, H, W)
             localization_map = localization_map.squeeze(dim=1)
             if localization_map.device != torch.device("cpu"):
                 localization_map = localization_map.cpu()
+           
+
             heatmap = self.colormap(localization_map)
             heatmap = heatmap[:, :, :, :, :3]
             # Permute input from (B, C, T, H, W) to (B, T, H, W, C)
-            curr_inp = inputs[i].permute(0, 2, 3, 4, 1)
+            #import pdb;pdb.set_trace()
+            curr_inp = inputs[i]['pixel_values'].permute(0, 1, 3, 4, 2)
             if curr_inp.device != torch.device("cpu"):
                 curr_inp = curr_inp.cpu()
-            curr_inp = data_utils.revert_tensor_normalize(
-                curr_inp, self.data_mean, self.data_std
-            )
-            heatmap = torch.from_numpy(heatmap)
+            # curr_inp = revert_tensor_normalize(
+            #     curr_inp, self.data_mean, self.data_std
+            # )
+            
+            heatmap = torch.from_numpy(heatmap)*255
             curr_inp = alpha * heatmap + (1 - alpha) * curr_inp
             # Permute inp to (B, T, C, H, W)
             curr_inp = curr_inp.permute(0, 1, 4, 2, 3)

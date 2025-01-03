@@ -27,6 +27,9 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
 from utils.DIPX import CustomDataset
+from utils.gradcam import GradCAM
+from utils.visualize import visualize
+
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -293,7 +296,13 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                 inputs2 = {k: v for k, v in inputs2.items()}
 
                 outputs = model(inputs1,inputs2)
-                #import pdb;pdb.set_trace()
+                with torch.enable_grad():
+                    import pdb;pdb.set_trace()
+                    tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]                   
+                    grad = GradCAM(model,tar,[0,0,0],[1,1,1])
+                    img,_ = grad([inputs1,inputs2],label)
+                    visualize(img[0].squeeze(0))
+
                 feat = model.first_model.feat
 
 

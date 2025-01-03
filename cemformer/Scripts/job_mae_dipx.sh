@@ -13,11 +13,15 @@
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukil/final/cemformer
+cd /scratch/mukil/cemformer
 
 
 
 #python main_multimae.py --model multimae --num_classes 5 
 
 CUDA_LAUNCH_BLOCKING=1 python main_dipx_mae.py --model multimae --batch 1 --num_classes 7 --dataset dipx  \
-   --technique combined_bottleneck_batchsize1 --n_attributes 32 --dropout 0.5 -combined_bottleneck -bottleneck 
+   --technique combined_bottleneck_batchsize1 --n_attributes 32 --dropout 0.5 -combined_bottleneck -bottleneck --debug debug
+
+# for plotting gradcam 
+CUDA_LAUNCH_BLOCKING=1 python plot_gradcam.py --model multimae --batch 1 --num_classes 7 --dataset dipx  \
+   --technique gradcam --dropout 0.5 --debug debug --n_attributes 0
