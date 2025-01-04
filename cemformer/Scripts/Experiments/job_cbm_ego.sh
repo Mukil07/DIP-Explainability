@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=2G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/I3D_DIPX_EGO_BOTTLENECK_02.txt
+#SBATCH --output=output_DIPX/I3D_DIPX_EGO_BOTTLENECK.txt
 #SBATCH --nodelist=gnode078
 #SBATCH --partition=long
 

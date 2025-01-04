@@ -106,13 +106,13 @@ def val( valid_dataloader, model, device):
                 outputs = model(img1,img2) 
 
                 with torch.enable_grad():
-                    
-                    #tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]                   
-                    tar = ["first_model/Mixed_5c/b2b/bn","first_model/Mixed_5c_2/b2b/bn"]
+                    import pdb;pdb.set_trace()
+                    #tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]  
+                    #first_model/Mixed_5c_2/b2b/bn                 
+                    tar = ["first_model/Mixed_4f/b2b/conv3d","first_model/Mixed_4f_2/b2b/conv3d"]
                     grad = GradCAM(model,tar,[0,0,0],[1,1,1])
                     img,_ = grad([img1,img2],label)
-                    import pdb;pdb.set_trace()
-                    visualize(img[1].squeeze(0)) #for face image
+                    visualize(img[0].squeeze(0)) #for face image
 
 if __name__ == '__main__':
 
