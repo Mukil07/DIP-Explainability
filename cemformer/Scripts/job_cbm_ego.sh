@@ -1,19 +1,19 @@
 #!/bin/bash
 
-#SBATCH -A mobility_arfs
+#SBATCH -A wasilone11
 #SBATCH -c 8
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=2G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/I3D_DIPX_EGO_BOTTLENECK_02.txt
-#SBATCH --nodelist=gnode097
-#SBATCH --partition=ihub
+#SBATCH --nodelist=gnode078
+#SBATCH --partition=long
 
 
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukil/final/cemformer
+cd /scratch/mukil/cemformer
 # for debug use this 
 #python main.py --model memvit --debug debug 
 
@@ -31,7 +31,18 @@ cd /scratch/mukil/final/cemformer
 # ego bottleneck
 # python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
 #     --n_attributes 17 --multitask_classes 15 --dropout 0.45  -ego_cbm -multitask -bottleneck
-python main_i3d_dipx_cbm_gaze.py --model cbm --batch 1 --num_classes 7 --dataset dipx --technique ego02 \
+
+TECH=ego
+MODEL=cbm
+DATASET=dipx
+
+best=best_${MODEL}_${DATASET}_${TECH}_dir
+runs=runs_${MODEL}_${DATASET}_${TECH}
+
+rm -rf $best
+rm -rf $runs
+
+python main_dipx_i3d.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15 --dropout 0.45 -ego_cbm -multitask -bottleneck
 
 

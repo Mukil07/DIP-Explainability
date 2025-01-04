@@ -59,7 +59,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         model.to(device)
 
         #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-        ckp = torch.load('/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet_modified.pt',map_location=device)
+        ckp = torch.load('/scratch/mukil/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
        # ckp = torch.load(checkpoint,map_location=device)
         del ckp['logits.conv3d.bias']
         del ckp['logits.conv3d.weight']

@@ -104,6 +104,7 @@ class GradCAM:
             len(inputs) == len(self.target_layers)
         ), "Must register the same number of target layers as the number of input pathways."
         #input_clone = [inp.clone() for inp in inputs]
+       # import pdb;pdb.set_trace()
         preds = self.model(inputs[0],inputs[1])
         preds = preds[0]
 
@@ -120,8 +121,8 @@ class GradCAM:
         score.backward()
         localization_maps = []
         for i, inp in enumerate(inputs):
-            #import pdb;pdb.set_trace()
-            inp = inp['pixel_values'].permute((0,2,1,3,4))
+
+            #inp = inp.permute((0,1,2,3,4))
             _, _, T, H, W = inp.size()
             
             gradients = self.gradients[self.target_layers[i]]
@@ -180,9 +181,10 @@ class GradCAM:
         localization_maps, preds = self._calculate_localization_map(
             inputs, labels=labels
         )
-        #import pdb;pdb.set_trace()
+
         for i, localization_map in enumerate(localization_maps):
             # Convert (B, 1, T, H, W) to (B, T, H, W)
+
             localization_map = localization_map.squeeze(dim=1)
             if localization_map.device != torch.device("cpu"):
                 localization_map = localization_map.cpu()
@@ -192,7 +194,7 @@ class GradCAM:
             heatmap = heatmap[:, :, :, :, :3]
             # Permute input from (B, C, T, H, W) to (B, T, H, W, C)
             #import pdb;pdb.set_trace()
-            curr_inp = inputs[i]['pixel_values'].permute(0, 1, 3, 4, 2)
+            curr_inp = inputs[i].permute(0, 2, 3, 4, 1)
             if curr_inp.device != torch.device("cpu"):
                 curr_inp = curr_inp.cpu()
             # curr_inp = revert_tensor_normalize(

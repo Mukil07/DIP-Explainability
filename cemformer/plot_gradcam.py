@@ -28,7 +28,7 @@ from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
 from utils.DIPX import CustomDataset
 from utils.gradcam import GradCAM
-from utils.visualize import visualize
+from utils.save_img import visualize
 
 from model import build_model
 
@@ -47,15 +47,20 @@ def cross_validate_model(args, dataset, n_splits=5):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         model = build_model(args)
-    
-        checkpoint  = "/scratch/mukil/cemformer/weights/best_0_multimae_dipx.pth"
-        #import pdb;pdb.set_trace()
-        ckp = torch.load(checkpoint)
-        model.load_state_dict(ckp)
+        model.to(device)
+
+        #checkpoint = "weights/dino_vitbase16_pretrain.pth"
+        ckp = torch.load('/scratch/mukil/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
+       # ckp = torch.load(checkpoint,map_location=device)
+        del ckp['logits.conv3d.bias']
+        del ckp['logits.conv3d.weight']
+       #del ckp['pos_embed']
+        model.first_model.load_state_dict(ckp,strict=False)
+
         model.eval()
         total_params = sum(p.numel() for p in model.parameters())
         print(f"Total parameters: {total_params}")
-        model.to(device)
+
 
         #import pdb;pdb.set_trace()
         # Creating data loaders for training and validation
@@ -79,7 +84,7 @@ def cross_validate_model(args, dataset, n_splits=5):
         print(f"Trainable parameters: {trainable_params}")
 
 
-        # Train and evaluate the model
+        # plot gradcam 
         val( val_loader, model, device)
 
 def val( valid_dataloader, model, device):
@@ -89,30 +94,25 @@ def val( valid_dataloader, model, device):
 
         for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
-            img1 = img1.to(device)
-            img2 = img2.to(device)
+                img1 = img1.to(device)
+                img2 = img2.to(device)
 
-            label = cls.to(device)
+                label = cls.to(device)
 
-            # Forward pass
+                # Forward pass
 
-            img1=img1.type(torch.cuda.FloatTensor)
-            img2=img2.type(torch.cuda.FloatTensor)
+                img1=img1.type(torch.cuda.FloatTensor)
+                img2=img2.type(torch.cuda.FloatTensor)
+                outputs = model(img1,img2) 
 
-            inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-            inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
-            inputs1 = {k: v for k, v in inputs1.items()}
-            inputs2 = {k: v for k, v in inputs2.items()}
-
-            outputs = model(inputs1,inputs2)
-            with torch.enable_grad():
-                
-                #tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]                   
-                tar = ["first_model/model1/videomae/embeddings/patch_embeddings/projection","first_model/model2/videomae/embeddings/patch_embeddings/projection"]
-                grad = GradCAM(model,tar,[0,0,0],[1,1,1])
-                img,_ = grad([inputs1,inputs2],label)
-                import pdb;pdb.set_trace()
-                visualize(img[0].squeeze(0)) #for face image
+                with torch.enable_grad():
+                    
+                    #tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]                   
+                    tar = ["first_model/Mixed_5c/b2b/bn","first_model/Mixed_5c_2/b2b/bn"]
+                    grad = GradCAM(model,tar,[0,0,0],[1,1,1])
+                    img,_ = grad([img1,img2],label)
+                    import pdb;pdb.set_trace()
+                    visualize(img[1].squeeze(0)) #for face image
 
 if __name__ == '__main__':
 
