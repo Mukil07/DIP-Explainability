@@ -54,7 +54,7 @@ def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
         ddp_setup(args, rank, world_size)
         print(f"Fold {fold + 1}/{n_splits}")
         
-        log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
+        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
         writer = SummaryWriter(log_dir)   
 
        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -292,7 +292,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             all_labels.append(label.to(device))
             scheduler.step()
 
-        dist.barrier()
+       
         # running_loss = torch.tensor([train_loss], device=device)         
         # # if torch.cuda.is_available():
         # #     dist.reduce(running_loss, dst=0, op=torch.distributed.ReduceOp.SUM)
@@ -311,14 +311,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
         all_preds_gathered = [torch.zeros_like(all_preds_local) for _ in range(dist.get_world_size())]
         all_labels_gathered = [torch.zeros_like(all_labels_local) for _ in range(dist.get_world_size())]
-        dist.barrier()
         dist.all_gather(all_preds_gathered, all_preds_local)
         dist.all_gather(all_labels_gathered, all_labels_local)
 
 
         if dist.get_rank() == 0:
-            single_device = torch.device("cuda:0")
-            model.to(single_device)
             all_preds = torch.cat(all_preds_gathered).cpu().numpy()
             all_labels = torch.cat(all_labels_gathered).cpu().numpy()
 
@@ -327,8 +324,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
             print(f"Accuracy (Training): {accuracy_train:.4f}, F1 Score: {f1_train:.4f}")
 
-            ### EVAL 
-
+        ### EVAL 
+        dist.barrier()
+        if dist.get_rank() == 0:
+            single_gpu_device = torch.device("cuda:0")
+            model.to(single_gpu_device)
             print("Started Evaluating")
             model.eval()
 
@@ -346,10 +346,10 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 for i, (img1,img2,clas,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
-                    img1 = img1.to(single_device)
-                    img2 = img2.to(single_device)
+                    img1 = img1.to(single_gpu_device)
+                    img2 = img2.to(single_gpu_device)
 
-                    label = clas.to(single_device)
+                    label = clas.to(single_gpu_device)
 
                     # Forward pass
 
@@ -370,8 +370,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     
                     if args.gaze_cbm:
 
-                        loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(single_device))
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
+                        loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(single_gpu_device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.to(single_gpu_device))
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(outputs[2],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
@@ -382,8 +382,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                     elif args.ego_cbm:
                             
-                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_device))
+                        loss3 = lam2*criterion3(outputs[1],gaze.to(single_gpu_device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_gpu_device))
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(outputs[1],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
@@ -395,8 +395,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                     elif args.multitask:
 
-                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_device))
+                        loss3 = lam2*criterion3(outputs[1],gaze.to(single_gpu_device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_gpu_device))
 
                         loss = loss1 + loss2 + loss3
                         #import pdb;pdb.set_trace()
@@ -410,8 +410,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                     elif args.combined_bottleneck:
                         #import pdb;pdb.set_trace()
-                        loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
-                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.to(single_gpu_device))
+                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(single_gpu_device))
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
@@ -431,7 +431,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                     all_preds.append(predicted.cpu())
                     all_labels.append(label.cpu())
-    
+
 
                     FEAT.append(feat.cpu())
                     LABEL.append(label.cpu())
@@ -454,9 +454,6 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             # for Action Classification 
 
             confusion(all_labels, all_preds,'action',writer,epoch)
-
-
-
             writer.add_figure('TSNE', tsne_img,epoch)
 
             val_loss = val_loss_running/len(valid_dataloader)
@@ -474,7 +471,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 #'weighted' or 'macro' s
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
-                print("accuracy and F1(GAZE)",accuracy_val_ego,f1_val_ego) 
+                print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
 
                 writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
                 writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
@@ -556,3 +553,4 @@ if __name__ == '__main__':
     dataset = CustomDataset(debug = args.debug)
     mp.spawn(cross_validate_model, args= [world_size, args,dataset], nprocs = world_size)
     #cross_validate_model(rank, world_size, args,dataset)
+
