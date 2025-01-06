@@ -1,118 +1,84 @@
 import torch 
-import torch.nn as nn 
-import numpy as np 
-import matplotlib.pyplot as plt
-
-from utils.plot_confusion import confusion
 import argparse
-
-import torch.optim as optim
-
-from torchvision import datasets, transforms
 
 from tqdm.auto import tqdm
 import os
-from copy import deepcopy
-from torch.nn.utils import clip_grad_norm_
-from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
-from torch.utils.tensorboard import SummaryWriter
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.metrics import confusion_matrix
 
-from torchvision.transforms import ToTensor, Lambda, Compose
-from torchvision.transforms.functional import to_pil_image, to_grayscale
-from torch.utils.data import Dataset, DataLoader, random_split
-
-from utils.tsne import plot_tsne as TSNE
-from utils.plot_confusion import confusion
-from utils.DIPX import CustomDataset
+from utils.DIPX_v2 import CustomDataset
 from utils.gradcam import GradCAM
 from utils.save_img import visualize
 
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
-from collections import Counter
-import videotransforms
 
-def cross_validate_model(args, dataset, n_splits=5):
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    accuracies = []
-    f1_scores = []
+def trainer(args, train_subset, valid_subset, n_splits=5):
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model = build_model(args)
+    model.to(device)
+
+    #checkpoint = "weights/dino_vitbase16_pretrain.pth"
+    ckp = torch.load('/scratch/mukil/best_0_cbm_dipx.pth',map_location=device)
+
+    # ckp = torch.load(checkpoint,map_location=device)
+    # del ckp['logits.conv3d.bias']
+    # del ckp['logits.conv3d.weight']
+    #del ckp['pos_embed']
+    #model.first_model.load_state_dict(ckp,strict=False)
+    model.load_state_dict(ckp,strict=False)
+    model.eval()
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params}")
+
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True)
+    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch,pin_memory=True)
+
+    for param in model.parameters():
+        param.requires_grad = True
+    # for layer in model.first_model.model1.videomae.encoder.layer:
+    #     for param in layer.attention.parameters():
+    #         param.requires_grad = True
+    # for layer in model.first_model.model2.videomae.encoder.layer:
+    #     for param in layer.attention.parameters():
+    #         param.requires_grad = True
+    # for layer in model.sec_model.parameters():
+    #     param.requires_grad = True
         
-    for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
-        print(f"Fold {fold + 1}/{n_splits}")
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Trainable parameters: {trainable_params}")
+    # plot gradcam 
+    val( val_loader, model, device)
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        model = build_model(args)
-        model.to(device)
-
-        #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-        ckp = torch.load('/scratch/mukil/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
-       # ckp = torch.load(checkpoint,map_location=device)
-        del ckp['logits.conv3d.bias']
-        del ckp['logits.conv3d.weight']
-       #del ckp['pos_embed']
-        model.first_model.load_state_dict(ckp,strict=False)
-
-        model.eval()
-        total_params = sum(p.numel() for p in model.parameters())
-        print(f"Total parameters: {total_params}")
-
-
-        #import pdb;pdb.set_trace()
-        # Creating data loaders for training and validation
-        train_subset = torch.utils.data.Subset(dataset, train_idx)
-        val_subset = torch.utils.data.Subset(dataset, val_idx)
-        train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True)
-        val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch,pin_memory=True)
-
-        for param in model.parameters():
-            param.requires_grad = True
-        # for layer in model.first_model.model1.videomae.encoder.layer:
-        #     for param in layer.attention.parameters():
-        #         param.requires_grad = True
-        # for layer in model.first_model.model2.videomae.encoder.layer:
-        #     for param in layer.attention.parameters():
-        #         param.requires_grad = True
-        # for layer in model.sec_model.parameters():
-        #     param.requires_grad = True
-            
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"Trainable parameters: {trainable_params}")
-
-
-        # plot gradcam 
-        val( val_loader, model, device)
 
 def val( valid_dataloader, model, device):
     model.eval()
 
-    with torch.no_grad():
+    #with torch.no_grad():
 
-        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+    for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
 
-                img1 = img1.to(device)
-                img2 = img2.to(device)
+            img1 = img1.to(device)
+            img2 = img2.to(device)
 
-                label = cls.to(device)
+            label = cls.to(device)
 
-                # Forward pass
+            # Forward pass
 
-                img1=img1.type(torch.cuda.FloatTensor)
-                img2=img2.type(torch.cuda.FloatTensor)
-                outputs = model(img1,img2) 
+            img1=img1.type(torch.cuda.FloatTensor)
+            img2=img2.type(torch.cuda.FloatTensor)
+            outputs = model(img1,img2) 
 
-                with torch.enable_grad():
-                    import pdb;pdb.set_trace()
-                    #tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]  
-                    #first_model/Mixed_5c_2/b2b/bn                 
-                    tar = ["first_model/Mixed_4f/b2b/conv3d","first_model/Mixed_4f_2/b2b/conv3d"]
-                    grad = GradCAM(model,tar,[0,0,0],[1,1,1])
-                    img,_ = grad([img1,img2],label)
-                    visualize(img[0].squeeze(0)) #for face image
+            #with torch.enable_grad():
+            #import pdb;pdb.set_trace()
+            print(torch.argmax(outputs[0]),label)
+          
+            #tar = ["first_model/MaxPool3d_5a_2x2","first_model/MaxPool3d_5a_2x2_2"]
+            tar = ["first_model/Mixed_5c","first_model/Mixed_5c_2"]
+            grad = GradCAM(model,tar,[0,0,0],[1,1,1])
+            img,_ = grad([img1,img2],label)
+            #visualize(img[1].squeeze(0)) #for face image
 
 if __name__ == '__main__':
 
@@ -146,6 +112,9 @@ if __name__ == '__main__':
 
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
+    train_csv = "/scratch/mukil/dipx/train_v2.csv"
+    val_csv = "/scratch/mukil/dipx/val_v2.csv"
+    train_subset = CustomDataset(train_csv, debug = args.debug)
+    val_subset = CustomDataset(val_csv, debug=args.debug)
 
-    dataset = CustomDataset(debug = args.debug)
-    cross_validate_model(args,dataset)
+    trainer(args,train_subset, val_subset)

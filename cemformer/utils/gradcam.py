@@ -137,6 +137,7 @@ class GradCAM:
             weights = weights.view(B, C, Tg, 1, 1)
            
             localization_map = torch.sum(weights * activations, dim=1, keepdim=True)
+            #localization_map = weights * activations
             localization_map = F.relu(localization_map)
             localization_map = F.interpolate(
                 localization_map,
@@ -144,20 +145,25 @@ class GradCAM:
                 mode="trilinear",
                 align_corners=False,
             )
-            localization_map_min, localization_map_max = (
-                torch.min(localization_map.view(B, -1), dim=-1, keepdim=True)[0],
-                torch.max(localization_map.view(B, -1), dim=-1, keepdim=True)[0],
-            )
-            localization_map_min = torch.reshape(
-                localization_map_min, shape=(B, 1, 1, 1, 1)
-            )
-            localization_map_max = torch.reshape(
-                localization_map_max, shape=(B, 1, 1, 1, 1)
-            )
+            # localization_map_min, localization_map_max = (
+            #     torch.min(localization_map.view(B, -1), dim=-1, keepdim=True)[0],
+            #     torch.max(localization_map.view(B, -1), dim=-1, keepdim=True)[0],
+            # )
+            # localization_map_min = torch.reshape(
+            #     localization_map_min, shape=(B, 1, 1, 1, 1)
+            # )
+            # localization_map_max = torch.reshape(
+            #     localization_map_max, shape=(B, 1, 1, 1, 1)
+            # )
             # Normalize the localization map.
-            localization_map = (localization_map - localization_map_min) / (
-                localization_map_max - localization_map_min + 1e-6
+            # localization_map = (localization_map - localization_map_min) / (
+            #     localization_map_max - localization_map_min + 1e-6
+            # )
+            localization_map = (localization_map - localization_map.min()) / (
+                localization_map.max() - localization_map.min() + 1e-6
             )
+
+
             localization_map = localization_map.data
 
             localization_maps.append(localization_map)

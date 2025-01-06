@@ -16,7 +16,7 @@ from copy import deepcopy
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.model_selection import KFold
+
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import confusion_matrix
 
@@ -26,7 +26,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX import CustomDataset
+from utils.DIPX_v2 import CustomDataset
 from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
@@ -43,131 +43,123 @@ def ddp_setup(args, rank,world_size):
     os.environ["MASTER_PORT"] = str(args.port)
     init_process_group(backend="nccl", rank=rank, world_size = world_size)
 
-def cross_validate_model(rank, world_size, args, dataset, n_splits=5):
+def cross_validate_model(rank, world_size, args, train_subset, valid_subset, n_splits=5):
+
+    ddp_setup(args, rank, world_size)
+    
+        
+    log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain"  # Separate log directory for each fold
+    writer = SummaryWriter(log_dir)   
+
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    device = rank
+    model = build_model(args)
+
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params}")
+
+    model.to(device)
+    model = DDP(model, device_ids=[rank], find_unused_parameters=True)
     
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    accuracies = []
-    f1_scores = []
-      
-    for fold, (train_idx, val_idx) in enumerate(kf.split(dataset)):
-        ddp_setup(args, rank, world_size)
-        print(f"Fold {fold + 1}/{n_splits}")
-        
-        log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain_{fold}"  # Separate log directory for each fold
-        writer = SummaryWriter(log_dir)   
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(train_subset),drop_last=True)
+    #val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
+    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
-       # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        device = rank
-        model = build_model(args)
-
-        total_params = sum(p.numel() for p in model.parameters())
-        print(f"Total parameters: {total_params}")
-
-        model.to(device)
-        model = DDP(model, device_ids=[rank], find_unused_parameters=True)
-        
-
-        #import pdb;pdb.set_trace()
-        # Creating data loaders for training and validation
-        train_subset = torch.utils.data.Subset(dataset, train_idx)
-        val_subset = torch.utils.data.Subset(dataset, val_idx)
-        train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(train_subset),drop_last=True)
-        #val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
-        val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch)
-
-        if args.distributed:
-            for param in model.module.parameters():
-                param.requires_grad = False
-            for layer in model.module.first_model.model1.videomae.encoder.layer:
-                for param in layer.attention.parameters():
-                    param.requires_grad = True
-            for layer in model.module.first_model.model2.videomae.encoder.layer:
-                for param in layer.attention.parameters():
-                    param.requires_grad = True
-            for layer in model.module.sec_model.parameters():
+    if args.distributed:
+        for param in model.module.parameters():
+            param.requires_grad = False
+        for layer in model.module.first_model.model1.videomae.encoder.layer:
+            for param in layer.attention.parameters():
                 param.requires_grad = True
-        else:
-
-            for param in model.parameters():
-                param.requires_grad = False
-            for layer in model.first_model.model1.videomae.encoder.layer:
-                for param in layer.attention.parameters():
-                    param.requires_grad = True
-            for layer in model.first_model.model2.videomae.encoder.layer:
-                for param in layer.attention.parameters():
-                    param.requires_grad = True
-            for layer in model.sec_model.parameters():
+        for layer in model.module.first_model.model2.videomae.encoder.layer:
+            for param in layer.attention.parameters():
                 param.requires_grad = True
-            
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"Trainable parameters: {trainable_params}")
+        for layer in model.module.sec_model.parameters():
+            param.requires_grad = True
+    else:
 
-        if args.gaze_cbm or args.combined_bottleneck:
-            #criterion1 = nn.CrossEntropyLoss() 
-            criterion1 = torch.hub.load(
-                'adeelh/pytorch-multi-class-focal-loss',
-                model='FocalLoss',
-                alpha=torch.tensor([.05, .104, .071, .122, .099, .098, .449]),
-                gamma=2,
-                force_reload=False
-            ).to(device)# action classificaiton 
-            criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
-            criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask)
-
-            
-        elif args.ego_cbm or args.multitask :       
-            criterion1 = nn.CrossEntropyLoss() # action classification 
-            criterion2 = nn.BCEWithLogitsLoss() # ego multilabel classsification (bottleneck)
-            criterion3 = nn.CrossEntropyLoss() # gaze classification (multitask)
-
-        else:
-
-            criterion1 = nn.CrossEntropyLoss()
-            criterion2=None
-            criterion3=None
-        ### OLDER Settings 
-
-        #criterion=torch.nn.CrossEntropyLoss()
-        #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
+        for param in model.parameters():
+            param.requires_grad = False
+        for layer in model.first_model.model1.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.first_model.model2.videomae.encoder.layer:
+            for param in layer.attention.parameters():
+                param.requires_grad = True
+        for layer in model.sec_model.parameters():
+            param.requires_grad = True
         
-        ### TESTING SGD 
-        # learning_rate = 0.001
-        # momentum = 0.9
-        # weight_decay = 0.001
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Trainable parameters: {trainable_params}")
 
-        # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
-        ####
-        base_learning_rate = args.learning_rate
-        weight_decay = 0.05
-        if args.distributed:
-            optimizer = optim.AdamW(model.module.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
-        else:
+    if args.gaze_cbm or args.combined_bottleneck:
+        #criterion1 = nn.CrossEntropyLoss() 
+        criterion1 = torch.hub.load(
+            'adeelh/pytorch-multi-class-focal-loss',
+            model='FocalLoss',
+            alpha=torch.tensor([.05, .104, .071, .122, .099, .098, .449]),
+            gamma=2,
+            force_reload=False
+        ).to(device)# action classificaiton 
+        criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
+        criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask)
 
-            optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
-
-        # Train and evaluate the model
-        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold)
-        accuracies.append(accuracy)
-        f1_scores.append(f1)
-
-        destroy_process_group()
         
-    # Calculate the average and standard deviation of the metrics
-    avg_accuracy = np.mean(accuracies)
-    std_accuracy = np.std(accuracies)
-    avg_f1_score = np.mean(f1_scores)
-    std_f1_score = np.std(f1_scores)
+    elif args.ego_cbm or args.multitask :       
+        criterion1 = nn.CrossEntropyLoss() # action classification 
+        criterion2 = nn.BCEWithLogitsLoss() # ego multilabel classsification (bottleneck)
+        criterion3 = nn.CrossEntropyLoss() # gaze classification (multitask)
 
-    print(f"Average Accuracy: {avg_accuracy:.4f} ± {std_accuracy:.4f}")
-    print(f"Average F1 Score: {avg_f1_score:.4f} ± {std_f1_score:.4f}")
-    return avg_accuracy, std_accuracy, avg_f1_score, std_f1_score
+    else:
+
+        criterion1 = nn.CrossEntropyLoss()
+        criterion2=None
+        criterion3=None
+    ### OLDER Settings 
+
+    #criterion=torch.nn.CrossEntropyLoss()
+    #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
+    
+    ### TESTING SGD 
+    # learning_rate = 0.001
+    # momentum = 0.9
+    # weight_decay = 0.001
+
+    # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+    ####
+    base_learning_rate = args.learning_rate
+    weight_decay = 0.05
+    if args.distributed:
+        optimizer = optim.AdamW(model.module.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
+    else:
+
+        optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
+
+    # Train and evaluate the model
+    if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
+        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        print("Average Accuracy",acc)
+        print("Average F1",f1)
+        print("Average Accuracy(Gaze)",acc_gaze)
+        print("Average F1(Gaze)",f1_gaze)
+        print("Average Accuracy(Ego)",acc_ego)
+        print("Average F1(Ego)",f1_ego)
+    else:
+        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        print("Average Accuracy",accuracy)
+        print("Average F1",f1)
+
+
+    destroy_process_group()
+    exit()
 
 
 
 
-def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer,fold):
+
+def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer):
     model.train()
 
     T=1
@@ -190,11 +182,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
         save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
 
     else:
-        save_dir = f"best_{fold}_{args.model}_{args.dataset}_dir"
+        save_dir = f"best_{args.model}_{args.dataset}_dir"
         
     patience_counter = 0
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
-    best_model_path = os.path.join(save_dir, f"best_{fold}_{args.model}_{args.dataset}.pth") 
+    best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
         model.to(device)
@@ -490,8 +482,23 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             writer.add_scalar("F1/Validation", f1_val, epoch)
             writer.add_scalar("F1/Train", f1_train, epoch)
 
-            if  accuracy_val - best_acc  > min_delta:
-                best_acc = accuracy_val
+            if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
+                final_acc = (accuracy_val + accuracy_val_ego + accuracy_val_gaze)/3
+            else:
+                final_acc = accuracy_val
+
+            if  final_acc - best_acc  > min_delta:
+                best_acc = final_acc
+                if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
+                    best_ego_acc = accuracy_val_ego
+                    best_ego_f1 = f1_val_ego
+
+                    best_gaze_acc = accuracy_val_gaze
+                    best_gaze_f1 = f1_val_gaze
+
+                best_val_acc = accuracy_val
+                best_val_f1 = f1_val
+
                 counter = 0  
                 if args.distributed:
                     torch.save(model.module.state_dict(),best_model_path)
@@ -509,8 +516,11 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                 print("Early stopping triggered. Training stopped.")
                 break
 
+    if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
+        return best_val_acc,best_val_f1,best_gaze_acc,best_gaze_f1,best_ego_acc,best_ego_f1
+    else:
 
-    return accuracy_val, f1_val
+        return best_val_acc,best_val_f1
     
 
 
@@ -550,7 +560,12 @@ if __name__ == '__main__':
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
-    dataset = CustomDataset(debug = args.debug)
-    mp.spawn(cross_validate_model, args= [world_size, args,dataset], nprocs = world_size)
+
+    train_csv = "/scratch/mukil/dipx/train_v2.csv"
+    val_csv = "/scratch/mukil/dipx/val_v2.csv"
+    train_subset = CustomDataset(train_csv, debug = args.debug)
+    val_subset = CustomDataset(val_csv, debug=args.debug)
+
+    mp.spawn(cross_validate_model, args= [world_size, args,train_subset, val_subset], nprocs = world_size)
     #cross_validate_model(rank, world_size, args,dataset)
 

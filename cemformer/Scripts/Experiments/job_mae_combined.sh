@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH -A mukilan
+#SBATCH -A mobility_arfs
 #SBATCH -c 36
 #SBATCH --gres=gpu:4
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/MAE_DIPX_combined.txt
-#SBATCH --nodelist=gnode077
-#SBATCH --partition=long
+#SBATCH --nodelist=gnode105
+#SBATCH --partition=ihub
 
 
 PORT=$((RANDOM % 55 + 12345))
@@ -31,5 +31,5 @@ runs=runs_${MODEL}_${DATASET}_${TECH}
 rm -rf $best
 rm -rf $runs
 
-python multigpu_v2.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  --port $PORT \
+python multigpu_v3.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  --port $PORT \
     --technique $TECH  --dropout 0.65 --learning_rate 0.0001 --n_attributes 32 -distributed -combined_bottleneck -bottleneck 
