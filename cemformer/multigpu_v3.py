@@ -43,12 +43,12 @@ def ddp_setup(args, rank,world_size):
     os.environ["MASTER_PORT"] = str(args.port)
     init_process_group(backend="nccl", rank=rank, world_size = world_size)
 
-def cross_validate_model(rank, world_size, args, train_subset, valid_subset, n_splits=5):
+def trainer(rank, world_size, args, train_subset, valid_subset, n_splits=5):
 
     ddp_setup(args, rank, world_size)
     
         
-    log_dir = f"runs_{args.model}_DIPX_{args.technique}/fold_brain"  # Separate log directory for each fold
+    log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain"  # Separate log directory for each fold
     writer = SummaryWriter(log_dir)   
 
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -515,7 +515,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             if patience_counter >= patience:
                 print("Early stopping triggered. Training stopped.")
                 break
-
+        dist.barrier()
+    
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
         return best_val_acc,best_val_f1,best_gaze_acc,best_gaze_f1,best_ego_acc,best_ego_f1
     else:
@@ -561,11 +562,12 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    train_csv = "/scratch/mukil/dipx/train_v2.csv"
-    val_csv = "/scratch/mukil/dipx/val_v2.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     train_subset = CustomDataset(train_csv, debug = args.debug)
+    
     val_subset = CustomDataset(val_csv, debug=args.debug)
 
-    mp.spawn(cross_validate_model, args= [world_size, args,train_subset, val_subset], nprocs = world_size)
+    mp.spawn(trainer, args= [world_size, args,train_subset, val_subset], nprocs = world_size)
     #cross_validate_model(rank, world_size, args,dataset)
 
