@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/MAE_DIPX_combined.txt
+#SBATCH --output=output_DIPX/MAE_DIPX_combined2.txt
 #SBATCH --nodelist=gnode105
 #SBATCH --partition=ihub
 
@@ -21,7 +21,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=combined_lr
+TECH=combined_lr2
 MODEL=multimae
 DATASET=dipx
 

@@ -163,8 +163,8 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
     model.train()
 
     T=1
-    num_epochs=100
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
+    num_epochs=200
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, total_iters=num_epochs)
 
     train_losses, valid_accuracy = [], []
     print("Started Training")
@@ -564,8 +564,8 @@ if __name__ == '__main__':
 
     train_csv = "/scratch/mukil/dipx/train.csv"
     val_csv = "/scratch/mukil/dipx/val.csv"
+
     train_subset = CustomDataset(train_csv, debug = args.debug)
-    
     val_subset = CustomDataset(val_csv, debug=args.debug)
 
     mp.spawn(trainer, args= [world_size, args,train_subset, val_subset], nprocs = world_size)
