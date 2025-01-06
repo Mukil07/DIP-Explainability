@@ -164,7 +164,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
     T=1
     num_epochs=200
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, total_iters=num_epochs)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.1, total_iters=num_epochs)
 
     train_losses, valid_accuracy = [], []
     print("Started Training")
