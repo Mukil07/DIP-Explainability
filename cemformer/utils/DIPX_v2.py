@@ -201,8 +201,20 @@ class CustomDataset(Dataset):
             else:
                 video_frames1,video_frames2 = video_to_tensor(video_frames1),video_to_tensor(video_frames2)
             if self.transform:
-                video_frames1 = self.transform(video_frames1)
-                video_frames2 = self.transform(video_frames2)
+                
+ 
+
+                video_frames1 = video_frames1.permute(1,0,2,3)
+                video_frames2 = video_frames2.permute(1,0,2,3)
+             
+                for frame in video_frames1:
+                    frame = self.transform((frame.to(torch.float32)/255))
+                    
+                for frame in video_frames2:
+                    frame = self.transform((frame.to(torch.float32)/255))    
+                                 
+                video_frames1 = video_frames1.permute(1,0,2,3)
+                video_frames2 = video_frames2.permute(1,0,2,3)  
             
             video_frames1 = torch.nn.functional.interpolate(video_frames1, size=(224, 224), mode='bilinear')
             video_frames2 = torch.nn.functional.interpolate(video_frames2, size=(224, 224), mode='bilinear')

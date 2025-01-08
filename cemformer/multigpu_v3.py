@@ -8,13 +8,13 @@ import argparse
 
 import torch.optim as optim
 
-from torchvision import datasets, transforms
-
+from torchvision import datasets
+import torchvision
 from tqdm.auto import tqdm
 import os
 from copy import deepcopy
 from torch.nn.utils import clip_grad_norm_
-from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 
 from sklearn.metrics import accuracy_score, f1_score
@@ -164,8 +164,9 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
     T=1
     num_epochs=200
+    # scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.05, total_iters=num_epochs)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
-
+    #scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=2, verbose=True)
     train_losses, valid_accuracy = [], []
     print("Started Training")
     if args.debug:
@@ -190,6 +191,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
     print("Started Training")
     for epoch in range(num_epochs):
         model.to(device)
+
         all_preds = []
         all_labels = []
         all_preds_local=[]
@@ -565,8 +567,10 @@ if __name__ == '__main__':
     train_csv = "/scratch/mukil/dipx/train.csv"
     val_csv = "/scratch/mukil/dipx/val.csv"
 
-    train_subset = CustomDataset(train_csv, debug = args.debug)
-    val_subset = CustomDataset(val_csv, debug=args.debug)
+    transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+    train_subset = CustomDataset(train_csv, debug = args.debug, transform=transform)
+    val_subset = CustomDataset(val_csv, debug=args.debug, transform=transform)
 
     mp.spawn(trainer, args= [world_size, args,train_subset, val_subset], nprocs = world_size)
     #cross_validate_model(rank, world_size, args,dataset)

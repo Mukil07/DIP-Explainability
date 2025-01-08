@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH -A mobility_arfs
+#SBATCH -A mukilan
 #SBATCH -c 36
 #SBATCH --gres=gpu:4
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=2G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/MAE_DIPX_combined2.txt
-#SBATCH --nodelist=gnode105
-#SBATCH --partition=ihub
+#SBATCH --output=output_DIPX/MAE_DIPX_combined4.txt
+#SBATCH --nodelist=gnode068
+#SBATCH --partition=long
 
 
 PORT=$((RANDOM % 55 + 12345))
@@ -21,7 +21,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=combined_lr2
+TECH=combined_lr4
 MODEL=multimae
 DATASET=dipx
 
@@ -32,4 +32,4 @@ rm -rf $best
 rm -rf $runs
 
 python multigpu_v3.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  --port $PORT \
-    --technique $TECH  --dropout 0.65 --learning_rate 0.0001 --n_attributes 32 -distributed -combined_bottleneck -bottleneck 
+    --technique $TECH  --dropout 0.65 --learning_rate 0.001 --n_attributes 32 -distributed -combined_bottleneck -bottleneck 
