@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 import os
 from copy import deepcopy
 from torch.nn.utils import clip_grad_norm_
-from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, CosineAnnealingWarmRestarts
 from torch.utils.tensorboard import SummaryWriter
 
 from sklearn.metrics import accuracy_score, f1_score
@@ -137,9 +137,11 @@ def trainer(rank, world_size, args, train_subset, valid_subset, n_splits=5):
 
         optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=weight_decay)
 
+    #scheduler = CosineAnnealingLR(optimizer, len(train_loader))
+    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=2, eta_min=0.000005)
     # Train and evaluate the model
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",acc)
         print("Average F1",f1)
         print("Average Accuracy(Gaze)",acc_gaze)
@@ -147,7 +149,7 @@ def trainer(rank, world_size, args, train_subset, valid_subset, n_splits=5):
         print("Average Accuracy(Ego)",acc_ego)
         print("Average F1(Ego)",f1_ego)
     else:
-        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        accuracy, f1 = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",accuracy)
         print("Average F1",f1)
 
@@ -159,13 +161,14 @@ def trainer(rank, world_size, args, train_subset, valid_subset, n_splits=5):
 
 
 
-def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion2, criterion3, optimizer, device,writer):
+def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer):
     model.train()
 
     T=1
     num_epochs=200
     # scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.05, total_iters=num_epochs)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
+    #scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
+    
     #scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=2, verbose=True)
     train_losses, valid_accuracy = [], []
     print("Started Training")
@@ -284,7 +287,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             # all_labels.append(label.cpu())
             all_preds.append(predicted.to(device))
             all_labels.append(label.to(device))
-            scheduler.step()
+        scheduler.step()
 
        
         # running_loss = torch.tensor([train_loss], device=device)         

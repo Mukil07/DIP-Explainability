@@ -32,4 +32,4 @@ rm -rf $best
 rm -rf $runs
 
 python multigpu_v3.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  --port $PORT \
-    --technique $TECH  --dropout 0.65 --learning_rate 0.001 --n_attributes 32 -distributed -combined_bottleneck -bottleneck 
+    --technique $TECH  --dropout 0.65 --learning_rate 0.0001 --n_attributes 32 -distributed -combined_bottleneck -bottleneck 
