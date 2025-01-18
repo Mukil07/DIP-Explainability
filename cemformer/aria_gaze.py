@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_ariagaze import CustomDataset
 from model import build_model
 
 
@@ -42,7 +42,6 @@ def Trainer(args, train_subset, valid_subset ):
     #val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
     val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
-    #import pdb;pdb.set_trace()
 
 
     if args.distributed:
@@ -63,10 +62,6 @@ def Trainer(args, train_subset, valid_subset ):
         if model.module.fourth_model is not None:
             for param in model.module.third_model.parameters():
                 param.requires_grad = True
-
-        for param in  model.module.first_model.all_fc.parameters():
-
-            param.requires_grad=True
     else:
 
         for param in model.parameters():
@@ -86,10 +81,7 @@ def Trainer(args, train_subset, valid_subset ):
         if model.fourth_model is not None:
             for param in model.third_model.parameters():
                 param.requires_grad = True
-
-        for param in  model.first_model.all_fc.parameters():
-            param.requires_grad=True        
-    #import pdb;pdb.set_trace()
+                
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
 
@@ -401,11 +393,11 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                     all_labels.append(label.cpu())
     
 
-            #         FEAT.append(feat.cpu())
-            #         LABEL.append(label.cpu())
+                    FEAT.append(feat.cpu())
+                    LABEL.append(label.cpu())
 
-            # tsne = TSNE()
-            # tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
+            tsne = TSNE()
+            tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
 
             all_labels = np.hstack(all_labels)
             all_preds = np.hstack(all_preds)
@@ -418,12 +410,12 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 all_labels_ego = np.hstack(all_labels_ego)
                 all_preds_ego = np.hstack(all_preds_ego)    
                 #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
-                #confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
+                confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
             # for Action Classification 
 
             confusion(all_labels, all_preds,'action',writer,epoch)
             
-            #writer.add_figure('TSNE', tsne_img,epoch)
+            writer.add_figure('TSNE', tsne_img,epoch)
 
             val_loss = val_loss_running/len(valid_dataloader)
 
@@ -442,22 +434,22 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
                 print("accuracy and F1(GAZE)",accuracy_val_ego,f1_val_ego) 
 
-                #writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
-                #writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
-                #writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
-                #writer.add_scalar("F1/Validation(Ego)", f1_val_ego, epoch)
+                writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
+                writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
+                writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
+                writer.add_scalar("F1/Validation(Ego)", f1_val_ego, epoch)
 
             print("accuracy and F1",accuracy_val,f1_val) 
 
             
 
-           # writer.add_scalar("Loss/Train", epoch_loss, epoch)
-            #writer.add_scalar("Loss/Validation", val_loss, epoch)
+            writer.add_scalar("Loss/Train", epoch_loss, epoch)
+            writer.add_scalar("Loss/Validation", val_loss, epoch)
             writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
-            #writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
+            writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
 
-            #writer.add_scalar("F1/Validation", f1_val, epoch)
-            #writer.add_scalar("F1/Train", f1_train, epoch)
+            writer.add_scalar("F1/Validation", f1_val, epoch)
+            writer.add_scalar("F1/Train", f1_train, epoch)
 
             if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
                 final_acc = (accuracy_val + accuracy_val_ego + accuracy_val_gaze)/3
@@ -503,11 +495,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
 
 if __name__ == '__main__':
-    seed = 37
 
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
-    
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
