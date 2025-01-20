@@ -64,7 +64,7 @@ class Adapter(nn.Module):
             num_hidden_layers=6,
             #config=config,  # provide this in case you're planning to fine-tune an already fine-tuned checkpoint
         )
-        self.model2 = VideoMAEForVideoClassification2.from_pretrained(
+        self.model2 = VideoMAEForVideoClassification.from_pretrained(
             model_ckpt,
             label2id=label2id,
             id2label=id2label,
@@ -145,7 +145,7 @@ class FC(nn.Module):
         x = self.fc(x)
         return x
 
-def Multi_Mae(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
+def Multi_Mae_test(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
                  use_relu, use_sigmoid,connect_CY, dropout):
 
     model1 = Adapter(num_classes = num_classes,n_attributes=n_attributes,

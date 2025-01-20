@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_v3 import CustomDataset
 from model import build_model
 
 
@@ -150,10 +150,6 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
     T=1
     num_epochs=200
-    # scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.05, total_iters=num_epochs)
-    #scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.00005, total_iters=100)
-    
-    #scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=2, verbose=True)
     train_losses, valid_accuracy = [], []
     print("Started Training")
     if args.debug:
@@ -183,23 +179,21 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
         all_preds = []
         all_labels = []
         train_loss = 0.0
-        for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(train_dataloader)):
+        for i, batch in tqdm(enumerate(train_dataloader)):
             
+            *images,cls,gaze,ego = batch
 
-            img1 = img1.to(device)
-            img2 = img2.to(device)
-
+            images = [img.to(device) for img in images]
+            images = [img.type(torch.cuda.FloatTensor) for img in images]
             label = cls.to(device)
 
-            # Forward pass
+           # import pdb;pdb.set_trace()
+            inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
+            inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
 
-            img1=img1.type(torch.cuda.FloatTensor)
-            img2=img2.type(torch.cuda.FloatTensor)
-            #import pdb;pdb.set_trace()
-            inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-            inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
             inputs1 = {k: v for k, v in inputs1.items()}
             inputs2 = {k: v for k, v in inputs2.items()}
+
 
             outputs = model(inputs1,inputs2)
             #import pdb;pdb.set_trace()
@@ -303,22 +297,21 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             LABEL=[]
             with torch.no_grad():
 
-                for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+                for i, batch in tqdm(enumerate(valid_dataloader)): 
 
-                    img1 = img1.to(device)
-                    img2 = img2.to(device)
+                    *images,cls,gaze,ego = batch
 
+                    images = [img.to(device) for img in images]
+                    images = [img.type(torch.cuda.FloatTensor) for img in images]
                     label = cls.to(device)
 
-                    # Forward pass
+                # import pdb;pdb.set_trace()
+                    inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
+                    inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
 
-                    img1=img1.type(torch.cuda.FloatTensor)
-                    img2=img2.type(torch.cuda.FloatTensor)
-
-                    inputs1 = {"pixel_values": img1.permute((0,2,1,-2,-1)),"labels":label}
-                    inputs2 = {"pixel_values": img2.permute((0,2,1,-2,-1)),"labels":label}
                     inputs1 = {k: v for k, v in inputs1.items()}
                     inputs2 = {k: v for k, v in inputs2.items()}
+
 
                     outputs = model(inputs1,inputs2)
 
@@ -440,7 +433,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                 #'weighted' or 'macro' s
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
-                print("accuracy and F1(GAZE)",accuracy_val_ego,f1_val_ego) 
+                print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
 
                 #writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
                 #writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)

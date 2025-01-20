@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/gaze_front.txt
-#SBATCH --nodelist=gnode100
+#SBATCH --output=output_DIPX/gaze_front_2.txt
+#SBATCH --nodelist=gnode097
 #SBATCH --partition=ihub
 
 
@@ -17,7 +17,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=gaze_front
+TECH=gaze_front_2
 MODEL=multimae
 DATASET=dipx
 

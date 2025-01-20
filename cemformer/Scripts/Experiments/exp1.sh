@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/aria_gaze.txt
-#SBATCH --nodelist=gnode100
+#SBATCH --output=output_DIPX/ego_earlyfusion.txt
+#SBATCH --nodelist=gnode097
 #SBATCH --partition=ihub
 
 
@@ -17,7 +17,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=aria_gaze
+TECH=ego_earlyfusion
 MODEL=multimae
 DATASET=dipx
 
@@ -27,5 +27,8 @@ runs=runs_${MODEL}_${DATASET}_${TECH}
 rm -rf $best
 rm -rf $runs
 
-python aria_gaze.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
+# python aria_gaze.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
+#     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
+
+python final_train_single.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
