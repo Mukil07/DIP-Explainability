@@ -64,9 +64,7 @@ def Trainer(args, train_subset, valid_subset ):
             for param in model.module.third_model.parameters():
                 param.requires_grad = True
 
-        for param in  model.module.first_model.all_fc.parameters():
 
-            param.requires_grad=True
     else:
 
         for param in model.parameters():
@@ -87,8 +85,7 @@ def Trainer(args, train_subset, valid_subset ):
             for param in model.third_model.parameters():
                 param.requires_grad = True
 
-        for param in  model.first_model.all_fc.parameters():
-            param.requires_grad=True        
+
     #import pdb;pdb.set_trace()
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
@@ -414,7 +411,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 #confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
             # for Action Classification 
 
-            confusion(all_labels, all_preds,'action',writer,epoch)
+            #confusion(all_labels, all_preds,'action',writer,epoch)
             
             #writer.add_figure('TSNE', tsne_img,epoch)
 
@@ -446,7 +443,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
            # writer.add_scalar("Loss/Train", epoch_loss, epoch)
             #writer.add_scalar("Loss/Validation", val_loss, epoch)
-            writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
+            #writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
             #writer.add_scalar("Accuracy/Train", accuracy_train, epoch)
 
             #writer.add_scalar("F1/Validation", f1_val, epoch)

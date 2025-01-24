@@ -18,7 +18,7 @@ module load u18/cuda/11.7
 cd /scratch/mukil/cemformer
 
 TECH=gaze_front_2
-MODEL=multimae
+MODEL=multimae_test
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir

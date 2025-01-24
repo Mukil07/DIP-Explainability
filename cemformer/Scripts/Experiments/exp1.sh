@@ -17,7 +17,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=ego_earlyfusion
+TECH=ego_earlyfusion_v2
 MODEL=multimae
 DATASET=dipx
 
