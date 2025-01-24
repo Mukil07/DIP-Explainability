@@ -4,6 +4,7 @@ import numpy as np
 
 from utils.plot_confusion import confusion
 import argparse
+
 import torch.optim as optim
 import torchvision
 from tqdm.auto import tqdm
@@ -11,6 +12,7 @@ import os
 
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, CosineAnnealingWarmRestarts
+
 from torch.utils.tensorboard import SummaryWriter
 
 from sklearn.metrics import accuracy_score, f1_score
@@ -19,13 +21,14 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v3 import CustomDataset
+from utils.DIPX_v2 import CustomDataset
+from utils.loss import cc_loss
+
 from model import build_model
 
 
-
 def Trainer(args, train_subset, valid_subset ):
-
+        
     log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/fold_brain"  # Separate log directory for each fold
     writer = SummaryWriter(log_dir)   
     # Initialize model, criterion, and optimizer
@@ -36,24 +39,44 @@ def Trainer(args, train_subset, valid_subset ):
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
     model.to(device)
-
-
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
     #val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
     val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
+
+    model.to(device)
+
+    checkpoint = "weights/dino_vitbase16_pretrain.pth"
+    
+    ckp = torch.load(checkpoint,map_location=device)
+    del ckp['pos_embed']
+
+    if args.model == "memvit_dipx":
+
+        model.load_state_dict(ckp,strict=False)
+    elif args.model == "memvit_multi":
+        model.vit_1.load_state_dict(ckp,strict=False)
+        model.vit_2.load_state_dict(ckp,strict=False)
+    else:
+        raise ValueError("Please give the correct model name for cemformer model")
+
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params}")
+    model.to(device)
+
+
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
+    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
+
     #import pdb;pdb.set_trace()
-
-
     if args.distributed:
         for param in model.module.parameters():
             param.requires_grad = False
-        for layer in model.module.first_model.model1.videomae.encoder.layer:
-            for param in layer.attention.parameters():
+        #import pdb;pdb.set_trace()
+        for block in model.module.first_model.model.vit.blocks:
+            for param in block.attn.parameters():
                 param.requires_grad = True
-        for layer in model.module.first_model.model2.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
+
         for param in model.module.sec_model.parameters():
             param.requires_grad = True
         
@@ -64,16 +87,17 @@ def Trainer(args, train_subset, valid_subset ):
             for param in model.module.third_model.parameters():
                 param.requires_grad = True
 
+        for param in  model.module.first_model.all_fc.parameters():
 
+            param.requires_grad=True
+    
     else:
 
         for param in model.parameters():
             param.requires_grad = False
-        for layer in model.first_model.model1.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
-        for layer in model.first_model.model2.videomae.encoder.layer:
-            for param in layer.attention.parameters():
+        #import pdb;pdb.set_trace()
+        for block in model.first_model.model.vit.blocks:
+            for param in block.attn.parameters():
                 param.requires_grad = True
         for param in model.sec_model.parameters():
             param.requires_grad = True
@@ -83,10 +107,10 @@ def Trainer(args, train_subset, valid_subset ):
                 param.requires_grad = True
         if model.fourth_model is not None:
             for param in model.third_model.parameters():
-                param.requires_grad = True
+                param.requires_grad = True      
+        for param in  model.first_model.all_fc.parameters():
+            param.requires_grad=True       
 
-
-    #import pdb;pdb.set_trace()
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
 
@@ -114,6 +138,7 @@ def Trainer(args, train_subset, valid_subset ):
         criterion2=None
         criterion3=None
 
+
     base_learning_rate = args.learning_rate
     weight_decay = 0.05
     if args.distributed:
@@ -124,7 +149,7 @@ def Trainer(args, train_subset, valid_subset ):
 
     #scheduler = CosineAnnealingLR(optimizer, len(train_loader))
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=2, eta_min=0.000005)
-    # Train and evaluate the model
+# Train and evaluate the model
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
         acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",acc)
@@ -142,11 +167,14 @@ def Trainer(args, train_subset, valid_subset ):
 
 
 
+
+
 def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer):
     model.train()
 
     T=1
     num_epochs=200
+
     train_losses, valid_accuracy = [], []
     print("Started Training")
     if args.debug:
@@ -159,6 +187,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
     counter = 0 
     lam1,lam2 = 0.5,0.5
 
+    cc_criterion = cc_loss()
     if args.technique: 
         save_dir = f"best_{args.model}_{args.dataset}_{args.technique}_dir"
 
@@ -172,27 +201,22 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
     print("Started Training")
     for epoch in range(num_epochs):
         model.to(device)
-
         all_preds = []
         all_labels = []
         train_loss = 0.0
+
         for i, batch in tqdm(enumerate(train_dataloader)):
             
+
             *images,cls,gaze,ego = batch
 
             images = [img.to(device) for img in images]
             images = [img.type(torch.cuda.FloatTensor) for img in images]
             label = cls.to(device)
 
-           # import pdb;pdb.set_trace()
-            inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
-            inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
-
-            inputs1 = {k: v for k, v in inputs1.items()}
-            inputs2 = {k: v for k, v in inputs2.items()}
-
-
-            outputs = model(inputs1,inputs2)
+            # Forward pass
+            
+            outputs = model(images[0],images[1]) 
             #import pdb;pdb.set_trace()
             feat = model.first_model.feat
             
@@ -211,7 +235,6 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 loss = loss1 + loss2 + loss3
 
 
-            
             elif args.combined_bottleneck:
                 #import pdb;pdb.set_trace()
                 loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda().to(device))
@@ -224,9 +247,13 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
 
                 loss = loss1 + loss2 + loss3
+            
             else:
 
-                loss = loss1
+                
+                context = [list(x) for x in zip(*context)]
+                ccloss = cc_criterion.calc_loss(context,outputs[0])
+                loss = loss1+ccloss
 
             #loss = criterion(outputs, label)
 
@@ -243,7 +270,6 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
             loss_val = loss.cpu()
             train_loss += loss_val
-
             loss = loss / accumulation_steps    
             loss.backward()
 
@@ -254,13 +280,14 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             # Gradient clipping
             clip_grad_norm_(model.parameters(), max_norm=1.0)
 
+      
 
             
             predicted = torch.argmax(outputs[0],dim=1)
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
-
         scheduler.step()
+           #cosine_scheduler.step()
 
 
         epoch_loss = train_loss/len(train_dataloader)
@@ -292,6 +319,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             val_loss_running=0
             FEAT=[]
             LABEL=[]
+
             with torch.no_grad():
 
                 for i, batch in tqdm(enumerate(valid_dataloader)): 
@@ -300,26 +328,12 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                     images = [img.to(device) for img in images]
                     images = [img.type(torch.cuda.FloatTensor) for img in images]
+
                     label = cls.to(device)
 
-                # import pdb;pdb.set_trace()
-                    inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
-                    inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
 
-                    inputs1 = {k: v for k, v in inputs1.items()}
-                    inputs2 = {k: v for k, v in inputs2.items()}
-
-
-                    outputs = model(inputs1,inputs2)
-
-                    if args.grad_cam:
-                        with torch.enable_grad():
-                            import pdb;pdb.set_trace()
-                            tar=["first_model/model1/videomae/encoder/layer","first_model/model2/videomae/encoder/layer"]                   
-                            grad = GradCAM(model,tar,[0,0,0],[1,1,1])
-                            img,_ = grad([inputs1,inputs2],label)
-                            # visualize(img[0].squeeze(0))
-
+                    outputs = model(images[0],images[1]) 
+                    
                     feat = model.first_model.feat
 
 
@@ -351,7 +365,6 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                         all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
 
 
-
                     elif args.combined_bottleneck:
                         #import pdb;pdb.set_trace()
                         loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
@@ -378,9 +391,14 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                         predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
                         all_preds_ego.append(predicted_ego)
                         all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
+
+
                     else:
 
-                        loss = loss1
+                        
+                        context = [list(x) for x in zip(*context)]
+                        ccloss = cc_criterion.calc_loss(context,outputs[0])
+                        loss = loss1+ccloss
 
                     val_loss_running+=loss
 
@@ -393,7 +411,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
             #         FEAT.append(feat.cpu())
             #         LABEL.append(label.cpu())
-
+            # #ssimport pdb;pdb.set_trace()
             # tsne = TSNE()
             # tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
 
@@ -489,15 +507,11 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
         return best_val_acc,best_val_f1
     
-    
 
 
 if __name__ == '__main__':
-    seed = 37
 
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
-    
+    torch.manual_seed(1667)
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
@@ -515,12 +529,12 @@ if __name__ == '__main__':
     parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
+
     parser.add_argument("--dropout", type = float, default= 0.45)
     parser.add_argument("--accumulation",type= int, default = 1)
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
@@ -528,10 +542,12 @@ if __name__ == '__main__':
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
+
     args = parser.parse_args()
 
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
+
     world_size = torch.cuda.device_count()
 
     train_csv = "/scratch/mukil/dipx/train.csv"
@@ -542,7 +558,7 @@ if __name__ == '__main__':
     # train_subset = CustomDataset(train_csv, debug = args.debug, transform=transform)
     # val_subset = CustomDataset(val_csv, debug=args.debug, transform=transform)
     train_subset = CustomDataset(train_csv, debug = args.debug)
-    
     val_subset = CustomDataset(val_csv, debug=args.debug)
+
     Trainer(args, train_subset, val_subset)
 

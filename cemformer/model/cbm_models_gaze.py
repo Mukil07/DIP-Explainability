@@ -18,13 +18,14 @@ class End2EndModel(torch.nn.Module):
         self.use_sigmoid = use_sigmoid
 
     def forward_stage2(self, stage1_out):
+        #import pdb;pdb.set_trace()
         if self.use_relu:
             attr_outputs = [nn.ReLU()(o) for o in stage1_out]
         elif self.use_sigmoid:
             attr_outputs = [torch.nn.Sigmoid()(o) for o in stage1_out]
         else:
             attr_outputs = stage1_out
-       # import pdb;pdb.set_trace()
+
         stage2_inputs = attr_outputs
         stage2_inputs = torch.cat(stage2_inputs, dim=1)
   
