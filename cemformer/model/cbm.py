@@ -55,7 +55,7 @@ class CBM(InceptionI3d):
             if end_point in self.end_points2:
                 x2 = self._modules[end_point](x2) # use _modules to work with dataparallel
 
-        #import pdb;pdb.set_trace()
+       # import pdb;pdb.set_trace()
         x = torch.cat((x1,x2),dim=1)               
         self.feat = self.avg_pool(x).flatten(1)
         x = self.dropout(self.avg_pool(x))[:,:,0,0,0]

@@ -423,7 +423,7 @@ class InceptionI3d(nn.Module):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points2:
                 x2 = self._modules[end_point](x2) 
-
+        import pdb;pdb.set_trace()
         x = torch.cat((x1,x2),dim=1)
         feat = x.mean(dim=2).flatten(1)
         x = self.logits(self.dropout(self.avg_pool(x1)))

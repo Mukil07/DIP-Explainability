@@ -9,6 +9,8 @@ import torchvision
 from tqdm.auto import tqdm
 import os
 
+from captum.attr import Occlusion,IntegratedGradients
+
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, CosineAnnealingWarmRestarts
 from torch.utils.tensorboard import SummaryWriter
@@ -22,6 +24,13 @@ from utils.plot_confusion import confusion
 from utils.DIPX_v2 import CustomDataset
 from model import build_model
 
+
+def forward_func(*x,model):
+    # return the first element in the tuple
+    return model(*x)[0]
+
+
+
 def Eval(args, valid_subset ):
 
 
@@ -34,6 +43,9 @@ def Eval(args, valid_subset ):
 
     model = build_model(args)
 
+    if args.grad_cam:
+        ig = IntegratedGradients(forward_func)
+            
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
 
@@ -63,7 +75,7 @@ def Eval(args, valid_subset ):
         criterion3=None
 
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = evaluate(args, val_loader, model, criterion1, criterion2, criterion3, device)
+        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = evaluate(args, val_loader, model, criterion1, criterion2, criterion3, device,writer, ig)
         print("Average Accuracy",acc)
         print("Average F1",f1)
         print("Average Accuracy(Gaze)",acc_gaze)
@@ -71,30 +83,18 @@ def Eval(args, valid_subset ):
         print("Average Accuracy(Ego)",acc_ego)
         print("Average F1(Ego)",f1_ego)
     else:
-        accuracy, f1 = evaluate(args, val_loader, model, criterion1, criterion2, criterion3,  device)
+        accuracy, f1 = evaluate(args, val_loader, model, criterion1, criterion2, criterion3, device, writer, ig)
         print("Average Accuracy",accuracy)
         print("Average F1",f1)
         total_params = sum(p.numel() for p in model.parameters())
         print(f"Total parameters: {total_params}")
 
 
-def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, device):
+def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, device,writer,cap):
     model.eval()
     T=1
-    num_epochs=100
 
-
-    if args.debug:
-        patience =1
-    else:
-        patience =10
-    #patience = 10 
-    min_delta = 0.0001  
-    best_acc = 0 
-    counter = 0 
     lam1,lam2 = 0.5,0.5
-
-    patience_counter = 0
 
     print("Started Evaluating")
     model.eval()
@@ -125,7 +125,9 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             outputs = model(img1,img2) 
             
             feat = model.first_model.feat
-
+            import pdb;pdb.set_trace()
+            if args.grad_cam:
+                attributions_ig  = cap.attribute(img1, target=label, n_steps=200)
 
             loss1 = criterion1(outputs[0],label)  
             
@@ -194,12 +196,13 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
 
+            FEAT.append(feat.cpu())
+            LABEL.append(label.cpu())
+
             del img1
             del img2 
             del label
             del outputs
-            FEAT.append(feat.cpu())
-            LABEL.append(label.cpu())
     #ssimport pdb;pdb.set_trace()
     tsne = TSNE()
     tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
@@ -214,13 +217,13 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
         all_preds_gaze = np.hstack(all_preds_gaze)
         all_labels_ego = np.hstack(all_labels_ego)
         all_preds_ego = np.hstack(all_preds_ego)    
-        confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
+        confusion(all_labels_gaze, all_preds_gaze,'gaze',writer)
 
     # for Action Classification 
-    confusion(all_labels, all_preds,'action',writer,epoch)
+    confusion(all_labels, all_preds,'action',writer,1)
     
 
-    writer.add_figure('TSNE', tsne_img,epoch)
+    writer.add_figure('TSNE', tsne_img)
 
     val_loss = val_loss_running/len(valid_dataloader)
 
@@ -239,27 +242,27 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
         print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
         print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
 
-        writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
-        writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
-        writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
-        writer.add_scalar("F1/Validation(Ego)", f1_val_ego, epoch)
+        writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze)
+        writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze)
+        writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego)
+        writer.add_scalar("F1/Validation(Ego)", f1_val_ego)
 
     print("accuracy and F1",accuracy_val,f1_val) 
 
     del all_preds_gaze, all_labels_gaze, all_preds_ego, all_labels_ego
 
 
-    writer.add_scalar("Loss/Validation", val_loss, epoch)
-    writer.add_scalar("Accuracy/Validation", accuracy_val, epoch)
+    writer.add_scalar("Loss/Validation", val_loss)
+    writer.add_scalar("Accuracy/Validation", accuracy_val)
 
-    writer.add_scalar("F1/Validation", f1_val, epoch)
+    writer.add_scalar("F1/Validation", f1_val)
 
 
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        return best_val_acc,best_val_f1,best_gaze_acc,best_gaze_f1,best_ego_acc,best_ego_f1
+        return accuracy_val,f1_val,accuracy_val_gaze,f1_val_gaze,accuracy_val_ego,f1_val_ego
     else:
 
-        return best_val_acc,best_val_f1
+        return accuracy_val,f1_val
 
 
 if __name__ == '__main__':
@@ -293,6 +296,7 @@ if __name__ == '__main__':
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
+    parser.add_argument("-grad_cam", action="store_true", help="enable grad cam")
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)

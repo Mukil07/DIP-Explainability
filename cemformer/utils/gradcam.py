@@ -124,7 +124,7 @@ class GradCAM:
 
             #inp = inp.permute((0,1,2,3,4))
             _, _, T, H, W = inp.size()
-            
+            #import pdb;pdb.set_trace()
             gradients = self.gradients[self.target_layers[i]]
             activations = self.activations[self.target_layers[i]]
             # gradients = gradients.unsqueeze(0).unsqueeze(1)
@@ -136,7 +136,8 @@ class GradCAM:
 
             weights = weights.view(B, C, Tg, 1, 1)
            
-            localization_map = torch.sum(weights * activations, dim=1, keepdim=True)
+            #localization_map = torch.sum(weights * activations, dim=1, keepdim=True) # original 
+            localization_map = torch.mean(weights * activations, dim=1, keepdim=True) 
             #localization_map = weights * activations
             localization_map = F.relu(localization_map)
             localization_map = F.interpolate(
@@ -159,6 +160,7 @@ class GradCAM:
             # localization_map = (localization_map - localization_map_min) / (
             #     localization_map_max - localization_map_min + 1e-6
             # )
+            #import pdb;pdb.set_trace()
             localization_map = (localization_map - localization_map.min()) / (
                 localization_map.max() - localization_map.min() + 1e-6
             )
@@ -167,7 +169,7 @@ class GradCAM:
             localization_map = localization_map.data
 
             localization_maps.append(localization_map)
-
+            del localization_map
         return localization_maps, preds
 
     def __call__(self, inputs, labels=None, alpha=0.5):

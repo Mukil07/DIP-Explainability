@@ -3,14 +3,13 @@ import argparse
 
 from tqdm.auto import tqdm
 import os
-
+import numpy as np 
 from utils.DIPX_v2 import CustomDataset
 from utils.gradcam import GradCAM
 from utils.save_img import visualize
 
 from model import build_model
 
-from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 def trainer(args, train_subset, valid_subset, n_splits=5):
 
@@ -18,15 +17,10 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
 
     model = build_model(args)
     model.to(device)
-
+    #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukil/best_0_cbm_dipx.pth',map_location=device)
+    ckp = torch.load('/scratch/mukil/cemformer/i3d/i3d_dipx/nobottle/best_cbm_dipx.pth',map_location=device)
 
-    # ckp = torch.load(checkpoint,map_location=device)
-    # del ckp['logits.conv3d.bias']
-    # del ckp['logits.conv3d.weight']
-    #del ckp['pos_embed']
-    #model.first_model.load_state_dict(ckp,strict=False)
     model.load_state_dict(ckp,strict=False)
     model.eval()
     total_params = sum(p.numel() for p in model.parameters())
@@ -37,14 +31,7 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
 
     for param in model.parameters():
         param.requires_grad = True
-    # for layer in model.first_model.model1.videomae.encoder.layer:
-    #     for param in layer.attention.parameters():
-    #         param.requires_grad = True
-    # for layer in model.first_model.model2.videomae.encoder.layer:
-    #     for param in layer.attention.parameters():
-    #         param.requires_grad = True
-    # for layer in model.sec_model.parameters():
-    #     param.requires_grad = True
+
         
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
@@ -75,13 +62,20 @@ def val( valid_dataloader, model, device):
             print(torch.argmax(outputs[0]),label)
           
             #tar = ["first_model/MaxPool3d_5a_2x2","first_model/MaxPool3d_5a_2x2_2"]
-            tar = ["first_model/Mixed_5c","first_model/Mixed_5c_2"]
+            #tar = ["first_model/MaxPool3d_3a_3x3","first_model/MaxPool3d_3a_3x3_2"] # general feat 
+            tar = ["first_model/MaxPool3d_4a_3x3", "first_model/MaxPool3d_4a_3x3_2"] # decent 
+            #tar = ["first_model/MaxPool3d_5a_2x2_2", "first_model/MaxPool3d_5a_2x2_2"]
+            #tar = ["first_model/Mixed_5c","first_model/Mixed_5c_2"]
             grad = GradCAM(model,tar,[0,0,0],[1,1,1])
+            import pdb;pdb.set_trace()
             img,_ = grad([img1,img2],label)
-            #visualize(img[1].squeeze(0)) #for face image
+            visualize(img[0].squeeze(0)) #for face image
 
 if __name__ == '__main__':
+    seed = 37
 
+    np.random.seed(seed)
+    torch.manual_seed(seed) 
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
@@ -112,8 +106,8 @@ if __name__ == '__main__':
 
     home_dir = str(args.directory)
     cache_dir = os.path.join(home_dir, "mukil")
-    train_csv = "/scratch/mukil/dipx/train_v2.csv"
-    val_csv = "/scratch/mukil/dipx/val_v2.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     train_subset = CustomDataset(train_csv, debug = args.debug)
     val_subset = CustomDataset(val_csv, debug=args.debug)
 
