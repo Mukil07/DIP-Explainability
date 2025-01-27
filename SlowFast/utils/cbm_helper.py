@@ -62,7 +62,7 @@ class MLP(nn.Module):
             self.linear = nn.Linear(input_dim, expand_dim)
             self.activation = torch.nn.ReLU()
             self.linear2 = nn.Linear(expand_dim, num_classes) #softmax is automatically handled by loss function
-        import pdb;pdb.set_trace()
+        #$import pdb;pdb.set_trace()
         self.linear = nn.Linear(input_dim, num_classes)
 
     def forward(self, x):
