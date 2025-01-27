@@ -409,6 +409,7 @@ _C.MODEL.SINGLE_PATHWAY_ARCH = [
     "slow",
     "x3d",
     "mvit",
+    "mvit_cbm",
     "maskmvit",
 ]
 
@@ -626,6 +627,21 @@ _C.MVIT.REV.RES_PATH = "conv"
 
 # Method to merge hidden states before Qpoolinglayers
 _C.MVIT.REV.PRE_Q_FUSION = "avg"
+# -----------------------------------------------------------------------------
+# CBM options
+# -----------------------------------------------------------------------------
+_C.CBM = CfgNode()
+_C.CBM.EMBED_DIM = 768
+_C.CBM.NUM_CLASSES = 7
+_C.CBM.MUL_CLASSES = 17
+_C.CBM.MULTITASK = True
+_C.CBM.N_ATTR = 15
+_C.CBM.BOTTLENECK = True
+_C.CBM.EXP_DIM = 512
+_C.CBM.RELU = False
+_C.CBM.USE_SIG = False
+_C.CBM.CONNECT_CY = False
+
 
 # -----------------------------------------------------------------------------
 # SlowFast options

@@ -540,8 +540,9 @@ def train(cfg):
     # Build the video model and print model statistics.
     model = build_model(cfg)
     flops, params = 0.0, 0.0
-    if du.is_master_proc() and cfg.LOG_MODEL_INFO:
-        flops, params = misc.log_model_info(model, cfg, use_train_input=True)
+    cfg.set_new_allowed(True)
+    # if du.is_master_proc() and cfg.LOG_MODEL_INFO:
+    #     flops, params = misc.log_model_info(model, cfg, use_train_input=True)
 
     # Construct the optimizer.
     optimizer = optim.construct_optimizer(model, cfg)
@@ -549,6 +550,7 @@ def train(cfg):
     scaler = torch.cuda.amp.GradScaler(enabled=cfg.TRAIN.MIXED_PRECISION)
 
     # Load a checkpoint to resume training if applicable.
+
     if cfg.TRAIN.AUTO_RESUME and cu.has_checkpoint(cfg.OUTPUT_DIR):
         logger.info("Load from last checkpoint.")
         last_checkpoint = cu.get_last_checkpoint(cfg.OUTPUT_DIR, task=cfg.TASK)
@@ -602,8 +604,8 @@ def train(cfg):
     #     else None
     # )
     #import pdb;pdb.set_trace()
-    train_csv = "/scratch/mukil/dipx/train_debug.csv"
-    val_csv = "/scratch/mukil/dipx/train_debug.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     transform= None
     train_subset = CustomDataset(train_csv, transform =transform )

@@ -73,6 +73,7 @@ def load_config(args, path_to_config=None):
     """
     # Setup cfg.
     cfg = get_cfg()
+    cfg.set_new_allowed(True)
     # Load config from cfg.
     if path_to_config is not None:
         cfg.merge_from_file(path_to_config)

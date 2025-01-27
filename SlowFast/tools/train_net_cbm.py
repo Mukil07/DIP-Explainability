@@ -5,7 +5,7 @@
 
 import math
 import pprint
-
+import torch.nn as nn 
 import numpy as np
 import torchvision
 import slowfast.models.losses as losses
@@ -75,7 +75,24 @@ def train_epoch(
     # Explicitly declare reduction to mean.
     loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(reduction="mean")
 
-    
+    lam1=0.5
+    lam2=0.5
+    if cfg.CBM.GAZE_CBM or cfg.CBM.COMB_BOTTLE:
+
+        criterion2 = nn.CrossEntropyLoss() # gaze classificaiotn (bottleneck)
+        criterion3 = nn.BCEWithLogitsLoss()  # ego classification (multitask)
+
+        
+    elif cfg.CBM.EGO_CBM or cfg.CBM.MULTITASK :       
+        
+        criterion2 = nn.BCEWithLogitsLoss() # ego multilabel classsification (bottleneck)
+        criterion3 = nn.CrossEntropyLoss() # gaze classification (multitask)
+
+    else:
+
+        criterion2=None
+        criterion3=None
+
     #import pdb;pdb.set_trace()
     for cur_iter, batch in enumerate(train_loader):
         # Transfer the data to the current GPU device.
@@ -99,7 +116,7 @@ def train_epoch(
         # batch_size = (
         #     inputs[0][0].size(0) if isinstance(inputs[0], list) else inputs[0].size(0)
         # )
-        batch_size = 4
+        batch_size = cfg.TRAIN.BATCH_SIZE
         *images,cls,gaze,ego = batch
         #import pdb;pdb.set_trace()
         images = [img.cuda(non_blocking=True) for img in images]
@@ -117,8 +134,8 @@ def train_epoch(
         #     samples, labels = mixup_fn(inputs[0], labels)
         #     inputs[0] = samples
         #import pdb;pdb.set_trace()
-        inputs = images[1]
-        inputs = inputs.unsqueeze(0)
+        inputs = images
+        #inputs = inputs.unsqueeze(0)
         #import pdb;pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=cfg.TRAIN.MIXED_PRECISION):
             # Explicitly declare reduction to mean.
@@ -140,7 +157,8 @@ def train_epoch(
             elif cfg.MASK.ENABLE:
                 preds, labels = model(inputs)
             else:
-                preds = model(inputs)
+                #import pdb;pdb.set_trace()
+                preds = model(inputs[0],inputs[1])
             if cfg.TASK == "ssl" and cfg.MODEL.MODEL_NAME == "ContrastiveModel":
                 labels = torch.zeros(
                     preds.size(0), dtype=labels.dtype, device=labels.device
@@ -150,7 +168,36 @@ def train_epoch(
                 loss = partial_loss
             else:
                 # Compute the loss.
-                loss = loss_fun(preds, labels)
+                loss = loss_fun(preds[0], labels)
+                if cfg.CBM.GAZE_CBM:
+
+                    loss3 = lam2*criterion3(preds[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cuda(non_blocking=True))
+                    loss2 = lam1*criterion2(torch.hstack(preds[2:]),gaze.cuda())
+                    loss = loss + loss2 + loss3
+
+
+                elif cfg.CBM.EGO_CBM:
+                        
+                    loss3 = lam2*criterion3(preds[1],gaze.cuda())
+                    loss2 = lam1*criterion2(torch.hstack(preds[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cuda(non_blocking=True))
+                    loss = loss + loss2 + loss3
+
+                elif cfg.CBM.COMB_BOTTLE:
+                    #import pdb;pdb.set_trace()
+                    loss2 = lam1*criterion2(torch.hstack(preds[1:16]),gaze.cuda())
+                    loss3 = lam2*criterion3(torch.hstack(preds[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cuda(non_blocking=True))
+                    loss = loss + loss2 + loss3
+
+                        
+                elif cfg.CBM.MULTITASK:
+
+                    loss3 = lam2*criterion3(preds[1],gaze.cuda())
+                    loss2 = lam1*criterion2(torch.hstack(preds[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cuda(non_blocking=True))
+
+                    loss = loss + loss2 + loss3
+                    
+
+
 
         loss_extra = None
         if isinstance(loss, (list, tuple)):
@@ -232,9 +279,9 @@ def train_epoch(
                     loss_extra = [one_loss.item() for one_loss in loss_extra]
             else:
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds[0], labels, (1, 5))
                 top1_err, top5_err = [
-                    (1.0 - x / preds.size(0)) * 100.0 for x in num_topks_correct
+                    (1.0 - x / preds[0].size(0)) * 100.0 for x in num_topks_correct
                 ]
                 # Gather all the predictions across all the devices.
                 if cfg.NUM_GPUS > 1:
@@ -381,8 +428,8 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                 )
                 preds = torch.sum(probs, 1)
             else:
-                inputs = images[0].unsqueeze(0)
-                preds = model(inputs)
+                #inputs = images[0].unsqueeze(0)
+                preds = model(images[0],images[1])
 
             if cfg.DATA.MULTI_LABEL:
                 if cfg.NUM_GPUS > 1:
@@ -391,11 +438,11 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                 if cfg.DATA.IN22k_VAL_IN1K != "":
                     preds = preds[:, :1000]
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds[0], labels, (1, 5))
 
                 # Combine the errors across the GPUs.
                 top1_err, top5_err = [
-                    (1.0 - x / preds.size(0)) * 100.0 for x in num_topks_correct
+                    (1.0 - x / preds[0].size(0)) * 100.0 for x in num_topks_correct
                 ]
                 if cfg.NUM_GPUS > 1:
                     top1_err, top5_err = du.all_reduce([top1_err, top5_err])
@@ -420,7 +467,7 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                         global_step=len(val_loader) * cur_epoch + cur_iter,
                     )
 
-            val_meter.update_predictions(preds, labels)
+            val_meter.update_predictions(preds[0], labels)
 
         val_meter.log_iter_stats(cur_epoch, cur_iter)
         val_meter.iter_tic()
@@ -540,8 +587,8 @@ def train(cfg):
     # Build the video model and print model statistics.
     model = build_model(cfg)
     flops, params = 0.0, 0.0
-    if du.is_master_proc() and cfg.LOG_MODEL_INFO:
-        flops, params = misc.log_model_info(model, cfg, use_train_input=True)
+    # if du.is_master_proc() and cfg.LOG_MODEL_INFO:
+    #     flops, params = misc.log_model_info(model, cfg, use_train_input=True)
 
     # Construct the optimizer.
     optimizer = optim.construct_optimizer(model, cfg)
@@ -603,7 +650,7 @@ def train(cfg):
     # )
     #import pdb;pdb.set_trace()
     train_csv = "/scratch/mukil/dipx/train_debug.csv"
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    val_csv = "/scratch/mukil/dipx/train_debug.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     transform= None
     train_subset = CustomDataset(train_csv, transform =transform )

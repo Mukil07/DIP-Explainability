@@ -8,7 +8,7 @@ from slowfast.utils.misc import launch_job
 from slowfast.utils.parser import load_config, parse_args
 from demo_net import demo
 from test_net import test
-from train_net import train
+from train_net_cbm import train
 from visualization import visualize
 
 
