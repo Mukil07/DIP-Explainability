@@ -25,7 +25,7 @@ from slowfast.models.contrastive import (
     contrastive_forward,
     contrastive_parameter_surgery,
 )
-from slowfast.utils.meters import AVAMeter, EpochTimer, TrainMeter, ValMeter
+from slowfast.utils.meters_cbm import AVAMeter, EpochTimer, TrainMeter, ValMeter
 from slowfast.utils.multigrid import MultigridSchedule
 from utils.DIPXv2 import CustomDataset
 logger = logging.get_logger(__name__)
@@ -469,7 +469,7 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                         global_step=len(val_loader) * cur_epoch + cur_iter,
                     )
 
-            val_meter.update_predictions(preds[0], labels)
+            val_meter.update_predictions(preds, labels, gaze, ego)
 
         val_meter.log_iter_stats(cur_epoch, cur_iter)
         val_meter.iter_tic()

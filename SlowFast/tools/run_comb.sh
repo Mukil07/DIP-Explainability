@@ -17,9 +17,9 @@ module load u18/cuda/11.6
 cd /scratch/mukil/SlowFast
 
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/SlowFast"
-python tools/run_net.py \
+python tools/run_net_final.py \
   --cfg configs/Kinetics/MVITv2_S_CBM.yaml \
   --opts TRAIN.BATCH_SIZE 2 TEST.BATCH_SIZE 2 \
   CBM.N_ATTR 32 CBM.MUL_CLASSES 0 \
   CBM.MULTITASK False CBM.BOTTLENECK True \
-  CBM.GAZE_CBM False CBM.EGO_CBM False CBM.COMB_BOTTLE True
+  CBM.GAZE_CBM False CBM.EGO_CBM False CBM.COMB_BOTTLE True SOLVER.MAX_EPOCH 50 OUTPUT_DIR ./comb
