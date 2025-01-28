@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH -A mukilan
+#SBATCH -A mobility_arfs
 #SBATCH -c 10
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/MAE_DIPX_ego.txt
-#SBATCH --nodelist=gnode059
-#SBATCH --partition=long
+#SBATCH --nodelist=gnode110
+#SBATCH --partition=ihub
 
 
 
@@ -18,7 +18,7 @@ module load u18/cuda/11.7
 cd /scratch/mukil/cemformer
 
 TECH=ego
-MODEL=multimae
+MODEL=multimae_test
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir

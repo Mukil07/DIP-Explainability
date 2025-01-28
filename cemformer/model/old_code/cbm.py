@@ -1,5 +1,5 @@
-from model.cbm_models import MLP, End2EndModel
-from model.i3d_multi import InceptionI3d
+from model.old_code.cbm_models import MLP, End2EndModel
+from model.i3d.i3d_multi import InceptionI3d
 import scipy.stats as stats
 import torch 
 import torch.nn as nn 

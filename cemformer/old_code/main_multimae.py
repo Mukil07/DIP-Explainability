@@ -19,18 +19,12 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import confusion_matrix
 
-from torchvision.transforms import ToTensor, Lambda, Compose
-from torchvision.transforms.functional import to_pil_image, to_grayscale
-from torch.utils.data import Dataset, DataLoader, random_split
 
 from utils.tsne import plot_tsne as TSNE
 from utils.loss import cc_loss
 from utils.Brain4Cars import CustomDataset
 from model import build_model
 
-from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
-from collections import Counter
-import videotransforms
 
 def cross_validate_model(args, dataset, n_splits=5):
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
