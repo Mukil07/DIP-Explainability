@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v3 import CustomDataset
+from utils.DIPX_v2 import CustomDataset
 from model import build_model
 
 
@@ -39,51 +39,50 @@ def Trainer(args, train_subset, valid_subset ):
 
 
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
-    #val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
     val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
     #import pdb;pdb.set_trace()
 
 
-    if args.distributed:
-        for param in model.module.parameters():
-            param.requires_grad = False
-        for layer in model.module.first_model.model1.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
-        for layer in model.module.first_model.model2.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
-        for param in model.module.sec_model.parameters():
-            param.requires_grad = True
+    # if args.distributed:
+    #     for param in model.module.parameters():
+    #         param.requires_grad = False
+    #     for layer in model.module.first_model.model1.videomae.encoder.layer:
+    #         for param in layer.attention.parameters():
+    #             param.requires_grad = True
+    #     for layer in model.module.first_model.model2.videomae.encoder.layer:
+    #         for param in layer.attention.parameters():
+    #             param.requires_grad = True
+    #     for param in model.module.sec_model.parameters():
+    #         param.requires_grad = True
         
-        if model.module.third_model is not None :
-            for param in model.module.third_model.parameters():
-                param.requires_grad = True
-        if model.module.fourth_model is not None:
-            for param in model.module.third_model.parameters():
-                param.requires_grad = True
+    #     if model.module.third_model is not None :
+    #         for param in model.module.third_model.parameters():
+    #             param.requires_grad = True
+    #     if model.module.fourth_model is not None:
+    #         for param in model.module.third_model.parameters():
+    #             param.requires_grad = True
 
 
-    else:
+    # else:
 
-        for param in model.parameters():
-            param.requires_grad = False
-        for layer in model.first_model.model1.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
-        for layer in model.first_model.model2.videomae.encoder.layer:
-            for param in layer.attention.parameters():
-                param.requires_grad = True
-        for param in model.sec_model.parameters():
-            param.requires_grad = True
+    #     for param in model.parameters():
+    #         param.requires_grad = False
+    #     for layer in model.first_model.model1.videomae.encoder.layer:
+    #         for param in layer.attention.parameters():
+    #             param.requires_grad = True
+    #     for layer in model.first_model.model2.videomae.encoder.layer:
+    #         for param in layer.attention.parameters():
+    #             param.requires_grad = True
+    #     for param in model.sec_model.parameters():
+    #         param.requires_grad = True
 
-        if model.third_model is not None:
-            for param in model.third_model.parameters():
-                param.requires_grad = True
-        if model.fourth_model is not None:
-            for param in model.third_model.parameters():
-                param.requires_grad = True
+    #     if model.third_model is not None:
+    #         for param in model.third_model.parameters():
+    #             param.requires_grad = True
+    #     if model.fourth_model is not None:
+    #         for param in model.third_model.parameters():
+    #             param.requires_grad = True
 
 
     #import pdb;pdb.set_trace()
@@ -143,10 +142,10 @@ def Trainer(args, train_subset, valid_subset ):
 
 
 def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer):
-    model.train()
+    
 
     T=1
-    num_epochs=200
+    num_epochs=args.num_epochs
     train_losses, valid_accuracy = [], []
     print("Started Training")
     if args.debug:
@@ -171,6 +170,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
     best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
+        model.train()
         model.to(device)
 
         all_preds = []
@@ -186,7 +186,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
            # import pdb;pdb.set_trace()
             inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
-            inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
+            inputs2 = {"pixel_values": images[1].permute((0,2,1,-2,-1)),"labels":label}
 
             inputs1 = {k: v for k, v in inputs1.items()}
             inputs2 = {k: v for k, v in inputs2.items()}
@@ -260,6 +260,9 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
 
+            del images, outputs, label
+            torch.cuda.empty_cache()
+
         scheduler.step()
 
 
@@ -304,7 +307,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                 # import pdb;pdb.set_trace()
                     inputs1 = {"pixel_values": images[0].permute((0,2,1,-2,-1)),"labels":label}
-                    inputs2 = {"pixel_values1": images[1].permute((0,2,1,-2,-1)),"pixel_values2":images[2].permute((0,2,1,-2,-1)),"labels":label}
+                    inputs2 = {"pixel_values": images[1].permute((0,2,1,-2,-1)),"labels":label}
 
                     inputs1 = {k: v for k, v in inputs1.items()}
                     inputs2 = {k: v for k, v in inputs2.items()}
@@ -515,7 +518,7 @@ if __name__ == '__main__':
     parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-
+    parser.add_argument("--num_epochs", default = 200, type=int)
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)

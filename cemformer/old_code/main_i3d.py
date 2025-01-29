@@ -31,7 +31,7 @@ from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from collections import Counter
-import videotransforms
+import mukil.cemformer.utils.videotransforms as videotransforms
 
 def cross_validate_model(args, dataset, n_splits=5):
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)

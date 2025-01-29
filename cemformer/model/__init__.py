@@ -1,13 +1,14 @@
-from model.vit_dino import vit_base
-from model.vit_mem import vit_mem
-from model.vit_mem_multi import vit_mem_multi
-from model.mem_cbm import vit_mem_dipx
-from model.i3d import InceptionI3d
+from model.old_code.vit_dino import vit_base
+from model.cem.vit_mem import vit_mem
+from model.cem.vit_mem_multi import vit_mem_multi
+from model.cem.mem_cbm import vit_mem_dipx
+from model.i3d.i3d import InceptionI3d
 from model.videomae import vit_base_patch16_224
 from model.multi_mae import Multi_Mae
 from model.multi_mae_test import Multi_Mae_test
 #from model.cbm import ModelXtoCtoY
-from model.cbm import ModelXtoCtoY
+from model.i3d.cbm import ModelXtoCtoY
+from model.i3d.i3d_lstm import ModelXtoCtoY_lstm 
 def build_model(args):
 
     if args.model == 'vit':
@@ -30,6 +31,12 @@ def build_model(args):
     elif args.model == 'cbm':
 
         return ModelXtoCtoY(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
+
+
+    elif args.model == 'i3d_lstm':
+
+        return ModelXtoCtoY_lstm(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
                  args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
     
     elif args.model == 'multimae':

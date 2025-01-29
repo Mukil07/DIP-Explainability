@@ -60,56 +60,45 @@ def Trainer(args, train_subset, valid_subset ):
     else:
         raise ValueError("Please give the correct model name for cemformer model")
 
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total parameters: {total_params}")
-    model.to(device)
-
-
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
     #import pdb;pdb.set_trace()
-    if args.distributed:
-        for param in model.module.parameters():
-            param.requires_grad = False
-        #import pdb;pdb.set_trace()
-        for block in model.module.first_model.model.vit.blocks:
-            for param in block.attn.parameters():
-                param.requires_grad = True
+    # if args.distributed:
+    #     for param in model.module.parameters():
+    #         param.requires_grad = False
+    #     #import pdb;pdb.set_trace()
+    #     for block in model.module.first_model.model.vit.blocks:
+    #         for param in block.attn.parameters():
+    #             param.requires_grad = True
 
-        for param in model.module.sec_model.parameters():
-            param.requires_grad = True
+    #     for param in model.module.sec_model.parameters():
+    #         param.requires_grad = True
         
-        if model.module.third_model is not None :
-            for param in model.module.third_model.parameters():
-                param.requires_grad = True
-        if model.module.fourth_model is not None:
-            for param in model.module.third_model.parameters():
-                param.requires_grad = True
+    #     if model.module.third_model is not None :
+    #         for param in model.module.third_model.parameters():
+    #             param.requires_grad = True
+    #     if model.module.fourth_model is not None:
+    #         for param in model.module.third_model.parameters():
+    #             param.requires_grad = True
 
-        for param in  model.module.first_model.all_fc.parameters():
 
-            param.requires_grad=True
-    
-    else:
+    # else:
 
-        for param in model.parameters():
-            param.requires_grad = False
-        #import pdb;pdb.set_trace()
-        for block in model.first_model.model.vit.blocks:
-            for param in block.attn.parameters():
-                param.requires_grad = True
-        for param in model.sec_model.parameters():
-            param.requires_grad = True
+    #     for param in model.parameters():
+    #         param.requires_grad = False
+    #     #import pdb;pdb.set_trace()
+    #     for block in model.first_model.model.vit.blocks:
+    #         for param in block.attn.parameters():
+    #             param.requires_grad = True
+    #     for param in model.sec_model.parameters():
+    #         param.requires_grad = True
 
-        if model.third_model is not None:
-            for param in model.third_model.parameters():
-                param.requires_grad = True
-        if model.fourth_model is not None:
-            for param in model.third_model.parameters():
-                param.requires_grad = True      
-        for param in  model.first_model.all_fc.parameters():
-            param.requires_grad=True       
+    #     if model.third_model is not None:
+    #         for param in model.third_model.parameters():
+    #             param.requires_grad = True
+    #     if model.fourth_model is not None:
+    #         for param in model.third_model.parameters():
+    #             param.requires_grad = True      
+     
 
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
@@ -170,7 +159,7 @@ def Trainer(args, train_subset, valid_subset ):
 
 
 def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer):
-    model.train()
+    
 
     T=1
     num_epochs=200
@@ -200,6 +189,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
     best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
     print("Started Training")
     for epoch in range(num_epochs):
+        model.train()
         model.to(device)
         all_preds = []
         all_labels = []
@@ -251,9 +241,9 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             else:
 
                 
-                context = [list(x) for x in zip(*context)]
-                ccloss = cc_criterion.calc_loss(context,outputs[0])
-                loss = loss1+ccloss
+                #context = [list(x) for x in zip(*context)]
+                #ccloss = cc_criterion.calc_loss(context,outputs[0])
+                loss = loss1
 
             #loss = criterion(outputs, label)
 
@@ -286,6 +276,12 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             predicted = torch.argmax(outputs[0],dim=1)
             all_preds.append(predicted.cpu())
             all_labels.append(label.cpu())
+
+            del images
+            del label
+            del outputs
+
+
         scheduler.step()
            #cosine_scheduler.step()
 
@@ -408,7 +404,10 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                     all_preds.append(predicted.cpu())
                     all_labels.append(label.cpu())
     
-
+                    del images
+                    del label
+                    del outputs
+                    
             #         FEAT.append(feat.cpu())
             #         LABEL.append(label.cpu())
             # #ssimport pdb;pdb.set_trace()
@@ -467,6 +466,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             #writer.add_scalar("F1/Validation", f1_val, epoch)
             #writer.add_scalar("F1/Train", f1_train, epoch)
 
+            del all_preds,all_labels,all_preds_gaze,all_labels_gaze,all_preds_ego,all_labels_ego
+
             if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
                 final_acc = (accuracy_val + accuracy_val_ego + accuracy_val_gaze)/3
             else:
@@ -511,7 +512,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
 if __name__ == '__main__':
 
-    torch.manual_seed(1667)
+    torch.manual_seed(37)
+    np.random.seed(37)
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))

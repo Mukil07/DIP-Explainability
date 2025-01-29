@@ -31,7 +31,7 @@ from model import build_model
 
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from collections import Counter
-import videotransforms
+import mukil.cemformer.utils.videotransforms as videotransforms
 
 import torch.multiprocessing as mp 
 from torch.utils.data.distributed import DistributedSampler
@@ -64,7 +64,6 @@ def trainer(rank, world_size, args, train_subset, valid_subset, n_splits=5):
     
 
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(train_subset),drop_last=True)
-    #val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True, shuffle= False, sampler = DistributedSampler(val_subset),drop_last=True)
     val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
     if args.distributed:
