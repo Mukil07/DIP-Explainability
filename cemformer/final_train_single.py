@@ -38,8 +38,8 @@ def Trainer(args, train_subset, valid_subset ):
     model.to(device)
 
 
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
+    train_loader = torch.utils.data.DataLoader(train_subset,num_workers=args.workers, batch_size=args.batch,pin_memory=True, shuffle= True)
+    val_loader = torch.utils.data.DataLoader(valid_subset,num_workers=args.workers, batch_size=args.batch)
 
     #import pdb;pdb.set_trace()
 
@@ -66,23 +66,14 @@ def Trainer(args, train_subset, valid_subset ):
 
     # else:
 
-    #     for param in model.parameters():
-    #         param.requires_grad = False
-    #     for layer in model.first_model.model1.videomae.encoder.layer:
-    #         for param in layer.attention.parameters():
-    #             param.requires_grad = True
-    #     for layer in model.first_model.model2.videomae.encoder.layer:
-    #         for param in layer.attention.parameters():
-    #             param.requires_grad = True
-    #     for param in model.sec_model.parameters():
-    #         param.requires_grad = True
-
-    #     if model.third_model is not None:
-    #         for param in model.third_model.parameters():
-    #             param.requires_grad = True
-    #     if model.fourth_model is not None:
-    #         for param in model.third_model.parameters():
-    #             param.requires_grad = True
+    for param in model.first_model.parameters():
+        param.requires_grad = False
+    for layer in model.first_model.model1.videomae.encoder.layer:
+        for param in layer.attention.parameters():
+            param.requires_grad = True
+    for layer in model.first_model.model2.videomae.encoder.layer:
+        for param in layer.attention.parameters():
+            param.requires_grad = True
 
 
     #import pdb;pdb.set_trace()
@@ -241,17 +232,30 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             # #import pdb;pdb.set_trace()
             # loss = loss_time*loss
 
-            loss_val = loss.cpu()
-            train_loss += loss_val
+            ###################### grad accumulation ############################
+            if args.accumulation > 1:
 
-            loss = loss / accumulation_steps    
-            loss.backward()
+                loss_val = loss.cpu()
+                train_loss += loss_val
 
-            if (i+1) % accumulation_steps == 0:             # Wait for several backward steps
-                optimizer.step()                            # Now we can do an optimizer step
-                optimizer.zero_grad()    
+                loss = loss / accumulation_steps    
+                loss.backward()
 
+                if (i+1) % accumulation_steps == 0:             # Wait for several backward steps
+                    optimizer.step()                            # Now we can do an optimizer step
+                    optimizer.zero_grad() 
+            else:
+                    
+                loss_val = loss.cpu()
+                train_loss += loss_val
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad() 
+            ###################### grad accumulation ############################
             # Gradient clipping
+
+
+
             clip_grad_norm_(model.parameters(), max_norm=1.0)
 
 
@@ -515,6 +519,7 @@ if __name__ == '__main__':
     parser.add_argument("--technique",  type = str, default = None)
     parser.add_argument("--num_classes",  type = int, default = 5)
     parser.add_argument("--batch",  type = int, default = 1)
+    parser.add_argument("--workers",  type = int, default = 1)
     parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
@@ -524,7 +529,7 @@ if __name__ == '__main__':
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
-    parser.add_argument("--dropout", type = float, default= 0.45)
+    parser.add_argument("--dropout", type = float, default= 0.0)
     parser.add_argument("--accumulation",type= int, default = 1)
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")

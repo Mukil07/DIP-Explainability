@@ -12,7 +12,7 @@ import slowfast.utils.logging as logging
 import torch
 import torch.utils.data
 from PIL import Image
-from slowfast.models.utils import calc_mvit_feature_geometry
+from slowfast.model.utils import calc_mvit_feature_geometry
 
 # import cv2
 from slowfast.utils.env import pathmgr

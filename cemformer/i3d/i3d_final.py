@@ -157,26 +157,26 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             #import pdb;pdb.set_trace()
             if args.gaze_cbm:
 
-                loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss3 = lam2*criterion3(outputs[1],torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                 loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
                 loss = loss1 + loss2 + loss3
             
             elif args.ego_cbm:
                     
                 loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                 loss = loss1 + loss2 + loss3
             
             elif args.combined_bottleneck:
-                #import pdb;pdb.set_trace()
+               
                 loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
-                loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                 loss = loss1 + loss2 + loss3
 
             elif args.multitask:
 
                 loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
 
                 loss = loss1 + loss2 + loss3
             else:
@@ -271,7 +271,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                     
                     if args.gaze_cbm:
 
-                        loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss3 = lam2*criterion3(outputs[1],torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                         loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(outputs[2],dim=1)
@@ -279,12 +279,12 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                         all_labels_gaze.append(gaze.cpu())          
                         predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().cpu()
                         all_preds_ego.append(predicted_ego)
-                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((1,0)).cpu())
 
                     elif args.ego_cbm:
                             
                         loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(outputs[1],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
@@ -292,25 +292,25 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                         predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
                         all_preds_ego.append(predicted_ego)
                     #import pdb;pdb.set_trace()
-                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((1,0)).cpu())
 
 
                     elif args.combined_bottleneck:
                         #import pdb;pdb.set_trace()
                         loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
-                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
                         loss = loss1 + loss2 + loss3
                         predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
                         all_labels_gaze.append(gaze.cpu())          
                         predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().cpu()
                         all_preds_ego.append(predicted_ego)
-                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())    
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((1,0)).cpu())    
 
                     elif args.multitask:
 
                         loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
 
                         loss = loss1 + loss2 + loss3
                         #import pdb;pdb.set_trace()
@@ -320,7 +320,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
                         #import pdb;pdb.set_trace()
                         predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
                         all_preds_ego.append(predicted_ego)
-                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((1,0)).cpu())
 
                     else:
 
@@ -441,10 +441,7 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
 
 if __name__ == '__main__':
-    seed = 37
 
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
     
     parser = argparse.ArgumentParser()
 

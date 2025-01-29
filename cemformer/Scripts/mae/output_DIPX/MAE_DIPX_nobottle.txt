@@ -1,0 +1,118 @@
+==========================================
+SLURM_JOB_ID = 2368056
+SLURM_NODELIST = gnode120
+SLURM_JOB_GPUS = 0
+==========================================
+/var/spool/slurmd/job2368056/slurm_script: line 15: activate: No such file or directory
+/home2/shankar.gangisetty/miniconda3/envs/sf/lib/python3.10/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+/home2/shankar.gangisetty/miniconda3/envs/sf/lib/python3.10/site-packages/timm/models/registry.py:4: FutureWarning: Importing from timm.models.registry is deprecated, please import via timm.models
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.models", FutureWarning)
+/home2/shankar.gangisetty/miniconda3/envs/sf/lib/python3.10/site-packages/torchvision/datapoints/__init__.py:12: UserWarning: The torchvision.datapoints and torchvision.transforms.v2 namespaces are still Beta. While we do not expect major breaking changes, some APIs may still change according to user feedback. Please submit any feedback you may have in this issue: https://github.com/pytorch/vision/issues/6753, and you can also check out https://github.com/pytorch/vision/issues/7319 to learn more about the APIs that we suspect might involve future changes. You can silence this warning by calling torchvision.disable_beta_transforms_warning().
+  warnings.warn(_BETA_TRANSFORMS_WARNING)
+/home2/shankar.gangisetty/miniconda3/envs/sf/lib/python3.10/site-packages/torchvision/transforms/v2/__init__.py:54: UserWarning: The torchvision.datapoints and torchvision.transforms.v2 namespaces are still Beta. While we do not expect major breaking changes, some APIs may still change according to user feedback. Please submit any feedback you may have in this issue: https://github.com/pytorch/vision/issues/6753, and you can also check out https://github.com/pytorch/vision/issues/7319 to learn more about the APIs that we suspect might involve future changes. You can silence this warning by calling torchvision.disable_beta_transforms_warning().
+  warnings.warn(_BETA_TRANSFORMS_WARNING)
+Some weights of VideoMAEForVideoClassification were not initialized from the model checkpoint at MCG-NJU/videomae-base and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Some weights of VideoMAEForVideoClassification were not initialized from the model checkpoint at MCG-NJU/videomae-base and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+/home2/shankar.gangisetty/miniconda3/envs/sf/lib/python3.10/site-packages/torch/nn/init.py:405: UserWarning: Initializing zero-element tensors is a no-op
+  warnings.warn("Initializing zero-element tensors is a no-op")
+hi
+Total parameters: 172497439
+Trainable parameters: 56689159
+Started Training
+Started Training
+0it [00:00, ?it/s]1it [00:10, 10.52s/it]2it [00:18,  8.88s/it]3it [00:27,  9.11s/it]4it [00:36,  9.16s/it]5it [00:45,  8.84s/it]6it [00:54,  8.98s/it]7it [01:03,  9.10s/it]8it [01:12,  9.09s/it]9it [01:21,  8.88s/it]10it [01:29,  8.78s/it]11it [01:38,  8.84s/it]12it [01:47,  8.92s/it]13it [01:56,  8.88s/it]14it [02:05,  8.93s/it]15it [02:14,  8.80s/it]16it [02:24,  9.22s/it]17it [02:33,  9.05s/it]18it [02:42,  9.10s/it]19it [02:52,  9.42s/it]20it [03:02,  9.58s/it]21it [03:10,  9.26s/it]22it [03:21,  9.60s/it]23it [03:29,  9.16s/it]24it [03:38,  9.23s/it]25it [03:47,  9.14s/it]26it [03:56,  8.96s/it]27it [04:04,  8.71s/it]28it [04:13,  8.96s/it]29it [04:22,  8.74s/it]30it [04:31,  8.92s/it]31it [04:39,  8.74s/it]32it [04:49,  8.90s/it]33it [04:57,  8.86s/it]34it [05:05,  8.64s/it]35it [05:15,  8.95s/it]36it [05:23,  8.73s/it]37it [05:33,  9.13s/it]38it [05:41,  8.70s/it]39it [05:52,  9.32s/it]40it [06:00,  9.01s/it]41it [06:09,  9.09s/it]42it [06:18,  8.85s/it]43it [06:27,  8.88s/it]44it [06:36,  8.88s/it]45it [06:45,  8.94s/it]46it [06:54,  8.91s/it]47it [07:04,  9.26s/it]48it [07:12,  9.08s/it]49it [07:21,  9.11s/it]50it [07:29,  8.79s/it]51it [07:38,  8.82s/it]52it [07:47,  8.75s/it]53it [07:56,  8.92s/it]54it [08:06,  9.06s/it]55it [08:14,  8.79s/it]56it [08:22,  8.75s/it]57it [08:32,  9.03s/it]58it [08:43,  9.54s/it]59it [08:51,  9.26s/it]60it [09:00,  8.97s/it]61it [09:09,  8.93s/it]62it [09:18,  9.15s/it]63it [09:27,  8.92s/it]64it [09:36,  9.08s/it]65it [09:45,  9.15s/it]66it [09:55,  9.27s/it]67it [10:03,  9.01s/it]68it [10:11,  8.70s/it]69it [10:20,  8.63s/it]70it [10:28,  8.57s/it]71it [10:37,  8.55s/it]72it [10:46,  8.66s/it]73it [10:54,  8.46s/it]74it [11:01,  8.23s/it]75it [11:10,  8.27s/it]76it [11:19,  8.54s/it]77it [11:28,  8.79s/it]78it [11:36,  8.49s/it]79it [11:45,  8.61s/it]80it [11:53,  8.50s/it]81it [12:02,  8.74s/it]82it [12:11,  8.63s/it]83it [12:21,  8.93s/it]84it [12:30,  8.96s/it]85it [12:39,  8.97s/it]86it [12:47,  8.75s/it]87it [12:56,  8.89s/it]88it [13:05,  8.80s/it]89it [13:13,  8.69s/it]90it [13:22,  8.72s/it]91it [13:31,  8.78s/it]92it [13:39,  8.56s/it]93it [13:48,  8.69s/it]94it [13:56,  8.44s/it]95it [14:05,  8.76s/it]96it [14:15,  9.07s/it]97it [14:24,  9.13s/it]98it [14:35,  9.57s/it]99it [14:43,  9.28s/it]100it [14:52,  9.05s/it]101it [14:59,  8.45s/it]102it [15:09,  8.80s/it]103it [15:18,  8.97s/it]104it [15:27,  8.96s/it]105it [15:36,  8.98s/it]106it [15:43,  8.49s/it]107it [15:52,  8.71s/it]108it [16:02,  8.92s/it]109it [16:10,  8.74s/it]110it [16:20,  9.07s/it]111it [16:29,  8.92s/it]112it [16:37,  8.82s/it]113it [16:46,  8.94s/it]114it [16:57,  9.47s/it]115it [17:05,  8.95s/it]116it [17:14,  8.92s/it]117it [17:23,  9.02s/it]118it [17:31,  8.77s/it]119it [17:39,  8.57s/it]120it [17:48,  8.49s/it]121it [17:56,  8.45s/it]122it [18:04,  8.44s/it]123it [18:12,  8.35s/it]124it [18:21,  8.42s/it]125it [18:30,  8.44s/it]126it [18:39,  8.81s/it]127it [18:50,  9.29s/it]128it [18:59,  9.21s/it]129it [19:08,  9.30s/it]130it [19:17,  9.13s/it]131it [19:25,  8.83s/it]132it [19:34,  8.91s/it]133it [19:44,  9.34s/it]134it [19:52,  8.91s/it]135it [20:00,  8.55s/it]136it [20:09,  8.53s/it]137it [20:17,  8.55s/it]138it [20:26,  8.79s/it]139it [20:35,  8.58s/it]140it [20:43,  8.52s/it]141it [20:52,  8.78s/it]142it [21:01,  8.75s/it]143it [21:10,  8.74s/it]144it [21:18,  8.73s/it]145it [21:28,  8.96s/it]146it [21:36,  8.74s/it]147it [21:44,  8.61s/it]148it [21:53,  8.46s/it]149it [22:02,  8.63s/it]150it [22:11,  8.74s/it]151it [22:20,  8.83s/it]152it [22:27,  8.46s/it]153it [22:35,  8.20s/it]154it [22:44,  8.39s/it]155it [22:51,  8.09s/it]156it [23:00,  8.22s/it]157it [23:09,  8.71s/it]158it [23:19,  8.94s/it]159it [23:27,  8.78s/it]160it [23:35,  8.55s/it]161it [23:45,  8.91s/it]162it [23:53,  8.72s/it]163it [24:02,  8.67s/it]164it [24:11,  8.76s/it]165it [24:19,  8.65s/it]166it [24:27,  8.51s/it]0 8 16 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/57c7bfd7-45ca-45fd-81c2-84bb5d42c070.mp4
+0 6 14 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/509b6c7b-c8e0-45d6-aef6-08c82cf105c5.mp4
+0 6 14 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/1ece1980-b7ce-4be1-a499-8f17df391ae1.mp4
+0 11 20 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/4ddda9d8-076a-4269-8a7b-438a0f233f85.mp4
+0 6 19 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/7ee13b95-6619-40bf-bfe1-fb591aa89ad5.mp4
+0 3 13 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/d15c8a69-190d-4124-ba3b-bc3ddc2c6a4f.mp4
+0 7 12 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/0b1dab69-30c7-4180-8afa-7e95d1d7157a.mp4
+0 6 16 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/6e843fe5-872d-4121-991d-c4383b2d60d1.mp4
+0 0 874 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/fcd86a2e-526d-4923-b957-9a7307d98c88.mp4
+0 0 874 30.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/front_view_common/fcd86a2e-526d-4923-b957-9a7307d98c88.mp4
+0 6 11 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/c7d09e83-e9da-4776-bdd2-b51a4620b20a.mp4
+0 6 12 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/5021593e-2fbf-48da-97b5-01b27a7cb292.mp4
+0 7 16 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/6e0b478f-2b3d-43d0-996e-ef101a523ec5.mp4
+0 5 10 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/af1e6c87-8d88-4479-a2a0-c8eb61cf08aa.mp4
+0 7 15 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/d973535c-40d4-45b3-ad11-ab4f72f359b2.mp4
+0 0 819 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/ee01ed71-0648-4107-9779-4602050e1e49.mp4
+0 10 21 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/d207beca-d98c-4726-b62d-522ef7e26cdd.mp4
+0 0 1398 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/efa32087-5c31-45f1-98c5-9c0ef4cc0819.mp4
+0 0 1398 30.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/front_view_common/efa32087-5c31-45f1-98c5-9c0ef4cc0819.mp4
+0 3 9 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/a8cc1804-efe1-45d1-88a2-d5515ec51f7b.mp4
+0 7 11 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/6cedfb66-73d8-40fb-bf18-647afc840cc7.mp4
+0 11 15 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/fb2293d9-690b-43b0-94b1-896a4eec48eb.mp4
+0 8 14 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/0fecdd67-d3b5-4894-b014-53ac697ee6a9.mp4
+0 7 12 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/a8df620f-63ea-4c02-b231-80777ba98eac.mp4
+0 17 26 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/4ced9f5d-72b7-40e7-b03b-80201752af2c.mp4
+0 5 11 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/442eff95-b3ce-4c90-81fc-220d8782c7d2.mp4
+0 6 15 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/1ddff00d-11ba-4e0b-8b35-cb73fcd5d5eb.mp4
+0 8 12 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/5ad30f2d-9771-4542-83fe-a75dfab7755f.mp4
+0 9 15 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/b41b2739-18f6-4bd0-aa3c-963384bf7263.mp4
+0 5 10 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/35b36559-ecee-47b9-b80f-f2ec141f1a86.mp4
+0 3 11 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/3f0c39f6-8e63-4efd-89a5-c44435b629c9.mp4
+0 13 19 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/4fcd961f-f20e-458d-9ff7-708bb904c3a7.mp4
+0 31 43 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/b0747577-cbdc-4006-8886-dcca8e52a2d7.mp4
+0 5 11 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/442eff95-b3ce-4c90-81fc-220d8782c7d2.mp4
+0 5 13 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/01ba1c32-3841-43db-852b-c37d0f9cb73c.mp4
+0 0 720 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/37f5c738-8de7-4b40-83aa-c66a977ef486.mp4
+0 0 720 30.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/front_view_common/37f5c738-8de7-4b40-83aa-c66a977ef486.mp4
+0 2 8 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/ceeef5cf-b9c2-4b55-8a8e-dd6ff766b02e.mp4
+0 12 21 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/8630f29d-fc4d-478e-8ce0-9ba87a2952de.mp4
+0 1 7 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/daad4afd-5671-4a4f-a57d-bcf71009a63b.mp4
+0 12 19 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/10c03c78-758e-4fca-8cfb-1aec5114edbd.mp4
+0 11 24 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/87e34479-5d75-437d-bb90-e57640b4b220.mp4
+0 3 9 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/9d1984a9-7c1b-4c88-904f-4d0cb70971ca.mp4
+0 5 13 60.0
+AAAAAAAAAAAAAA /scratch/mukil/dipx/common/ariagaze_view_common/9f1d3b9d-8914-4506-8144-6f499f25ea18.mp4
+166it [24:28,  8.84s/it]
+epoch 0 Loss: 1.8948
+Accuracy(Trainign): 0.2563, F1 Score: 0.2136
+Started Evaluating
+0it [00:00, ?it/s]1it [00:09,  9.81s/it]2it [00:17,  8.77s/it]3it [00:28,  9.49s/it]4it [00:36,  8.94s/it]5it [00:46,  9.25s/it]6it [00:54,  8.99s/it]7it [01:04,  9.29s/it]8it [01:14,  9.37s/it]9it [01:22,  9.13s/it]10it [01:32,  9.21s/it]11it [01:40,  8.92s/it]12it [01:49,  9.11s/it]13it [01:57,  8.58s/it]14it [02:07,  8.97s/it]15it [02:16,  9.13s/it]16it [02:24,  8.88s/it]17it [02:33,  8.81s/it]
