@@ -31,3 +31,4 @@ export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
 MODEL=i3d_lstm
 python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7  \
     --dataset $DATASET  --technique $TECH --n_attributes 32 -combined_bottleneck -bottleneck 
+

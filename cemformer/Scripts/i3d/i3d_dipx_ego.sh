@@ -7,7 +7,7 @@
 #SBATCH --output=i3d_ego.txt
 #SBATCH --nodelist=gnode120
 #SBATCH --partition=lovelace
-#SBATCH --job-name=ego_lstm
+#SBATCH --job-name=i3d_ego
 #SBATCH --qos=kl4
 
 
@@ -31,5 +31,5 @@ rm -rf $runs
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
 
 python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
-    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck
+    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
 

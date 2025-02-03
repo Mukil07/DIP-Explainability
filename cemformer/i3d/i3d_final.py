@@ -77,7 +77,7 @@ def Trainer(args, train_subset, valid_subset ):
     #optimizer = optim.AdamW(model.parameters(), lr=0.00005, weight_decay=5e-2)
     
     ### TESTING SGD 
-    learning_rate = 0.001
+    learning_rate = 0.008
     momentum = 0.9
     weight_decay = 0.001
 
@@ -352,8 +352,16 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                 all_labels_gaze = np.hstack(all_labels_gaze)
                 all_preds_gaze = np.hstack(all_preds_gaze)
-                all_labels_ego = np.hstack(all_labels_ego)
-                all_preds_ego = np.hstack(all_preds_ego)    
+                # all_labels_ego = np.hstack(all_labels_ego)
+                # all_preds_ego = np.hstack(all_preds_ego)    
+                all_labels_ego = torch.cat(all_labels_ego, dim=0)  # Shape (N, 17)
+                all_preds_ego = torch.cat(all_preds_ego, dim=0)    # Shape (N, 17)
+
+
+                # Flatten if treating as independent labels
+                # all_labels_ego = all_labels_ego.view(-1).numpy()
+                # all_preds_ego = all_preds_ego.view(-1).numpy()
+
                 #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
                 #confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
             # for Action Classification 
@@ -462,7 +470,7 @@ if __name__ == '__main__':
     parser.add_argument("--use_relu", type = bool, default= False)
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
-    parser.add_argument("--dropout", type = float, default= 0.45)
+    parser.add_argument("--dropout", type = float, default= 0.0)
     parser.add_argument("--num_epochs", default=100, type=int)
     
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
