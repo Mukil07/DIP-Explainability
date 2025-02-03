@@ -49,11 +49,11 @@ def Eval(args, valid_subset ):
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
 
-    import pdb;pdb.set_trace()
+    #import pdb;pdb.set_trace()
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukil/cemformer/i3d/i3d_dipx/nobottle/best_cbm_dipx.pth',map_location=device)
+    ckp = torch.load('/scratch/mukil/cemformer/i3d/i3d_dipx/ego/best_cbm_dipx.pth',map_location=device)
 
     model.load_state_dict(ckp,strict=False)
 
@@ -303,7 +303,7 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    val_csv = "/scratch/mukil/dipx/test.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     
     import pdb;pdb.set_trace()
     val_subset = CustomDataset(val_csv, debug=args.debug)

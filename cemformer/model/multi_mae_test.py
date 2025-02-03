@@ -60,7 +60,7 @@ class Adapter(nn.Module):
             label2id=label2id,
             id2label=id2label,
             ignore_mismatched_sizes=True,
-            hidden_dropout_prob=dropout, attention_probs_dropout_prob=dropout,
+            #hidden_dropout_prob=dropout, attention_probs_dropout_prob=dropout,
             #config=config,  # provide this in case you're planning to fine-tune an already fine-tuned checkpoint
         )
         self.model2 = VideoMAEForVideoClassification.from_pretrained(
@@ -68,7 +68,7 @@ class Adapter(nn.Module):
             label2id=label2id,
             id2label=id2label,
             ignore_mismatched_sizes=True,
-            hidden_dropout_prob=0.5, attention_probs_dropout_prob=0.5,
+            #hidden_dropout_prob=0.5, attention_probs_dropout_prob=0.5,
             #config=config,  # provide this in case you're planning to fine-tune an already fine-tuned checkpoint
         )
 
