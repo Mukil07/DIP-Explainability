@@ -4,7 +4,7 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=nobottle.txt
+#SBATCH --output=nobottle_new.txt
 #SBATCH --nodelist=gnode120
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4
@@ -23,5 +23,5 @@ python tools/run_net_final.py \
   --opts TRAIN.BATCH_SIZE 8 TEST.BATCH_SIZE 8 \
   CBM.N_ATTR 0 CBM.MUL_CLASSES 0 \
   CBM.MULTITASK False CBM.BOTTLENECK False \
-  CBM.GAZE_CBM False CBM.EGO_CBM False CBM.COMB_BOTTLE False SOLVER.MAX_EPOCH 50 OUTPUT_DIR ./nobottle
+  CBM.GAZE_CBM False CBM.EGO_CBM False CBM.COMB_BOTTLE False SOLVER.MAX_EPOCH 200 OUTPUT_DIR ./nobottle
 
