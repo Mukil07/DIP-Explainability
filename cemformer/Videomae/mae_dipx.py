@@ -523,7 +523,7 @@ if __name__ == '__main__':
     parser.add_argument("--port",  type = int, default = 12345)
     parser.add_argument("-distributed",  action ="store_true")
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-    parser.add_argument("--num_epochs", default = 200, type=int)
+    parser.add_argument("--num_epochs", default = 100, type=int)
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)

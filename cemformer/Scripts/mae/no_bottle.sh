@@ -26,6 +26,6 @@ runs=runs_${MODEL}_${DATASET}_${TECH}
 
 rm -rf $best
 rm -rf $runs
-
-python final_train_single.py --model $MODEL --batch 6 --num_classes 7 --dataset $DATASET  \
+export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
+python Videomae/mae_dipx.py --model $MODEL --batch 6 --num_classes 7 --dataset $DATASET  \
     --technique $TECH  --learning_rate 0.00005 --n_attributes 0 
