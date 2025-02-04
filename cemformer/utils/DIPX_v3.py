@@ -96,8 +96,8 @@ def decode_video(video_path, start,end, num_frames=16):
         while len(frames) < num_frames:
             frames.append(frames[-1])
     except:
-        print(len(frames),start,end,frame_rate)
-        print("AAAAAAAAAAAAAA",video_path)
+        # print(len(frames),start,end,frame_rate)
+        # print("AAAAAAAAAAAAAA",video_path)
         flag=True
         
     return np.array(frames),flag
