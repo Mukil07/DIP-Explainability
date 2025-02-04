@@ -34,7 +34,7 @@ def forward_func(*x,model):
 def Eval(args, valid_subset ):
 
 
-    log_dir = f"runs_{args.model}_DIPX_{args.technique}/dipx"  # Separate log directory for each fold
+    log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/dipx"  # Separate log directory for each fold
     writer = SummaryWriter(log_dir)   
 
 
@@ -45,7 +45,8 @@ def Eval(args, valid_subset ):
 
     if args.grad_cam:
         ig = IntegratedGradients(forward_func)
-            
+    else:
+        ig= None
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
 
@@ -125,7 +126,7 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             outputs = model(img1,img2) 
             
             feat = model.first_model.feat
-            import pdb;pdb.set_trace()
+           
             if args.grad_cam:
                 attributions_ig  = cap.attribute(img1, target=label, n_steps=200)
 
@@ -217,7 +218,7 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
         all_preds_gaze = np.hstack(all_preds_gaze)
         all_labels_ego = np.hstack(all_labels_ego)
         all_preds_ego = np.hstack(all_preds_ego)    
-        confusion(all_labels_gaze, all_preds_gaze,'gaze',writer)
+        confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,1)
 
     # for Action Classification 
     confusion(all_labels, all_preds,'action',writer,1)
@@ -266,11 +267,7 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
 
 
 if __name__ == '__main__':
-    seed = 37
-
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
-    
+    torch.manual_seed(0)
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
@@ -303,8 +300,8 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    val_csv = "/scratch/mukil/dipx/test.csv"
     
-    import pdb;pdb.set_trace()
+
     val_subset = CustomDataset(val_csv, debug=args.debug)
     Eval(args, val_subset)
