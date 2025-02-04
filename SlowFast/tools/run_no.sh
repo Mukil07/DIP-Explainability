@@ -12,7 +12,7 @@
 
 
 
-conda activate eye
+source activate eye
 module load u18/cuda/11.6
 cd /scratch/mukil/SlowFast
 

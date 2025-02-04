@@ -118,6 +118,8 @@ class CustomDataset(Dataset):
         self.time = '/scratch/mukil/dipx/time.csv'
         self.df = pd.read_csv(self.time)
 
+        self.mean = torch.tensor([0.485, 0.456, 0.406])
+        self.std = torch.tensor([0.229, 0.224, 0.225])
         if self.debug:
             
             self.csv_path = f'/scratch/mukil/dipx/train_{self.debug}.csv'
@@ -204,17 +206,23 @@ class CustomDataset(Dataset):
                 
  
                 #import pdb;pdb.set_trace()
-                video_frames1 = video_frames1.permute(1,0,2,3)
-                video_frames2 = video_frames2.permute(1,0,2,3)
-             
+                video_frames1 = video_frames1.permute(1,2,3,0)
+                video_frames2 = video_frames2.permute(1,2,3,0)
+
                 for frame in video_frames1:
-                    frame = self.transform((frame.to(torch.float32)/255))
-                    
+                    frame = frame.to(torch.float32)/255
+                    frame = frame.to(torch.float32)/255
+                    frame = frame - self.mean
+                    frame = frame / self.std
+
                 for frame in video_frames2:
-                    frame = self.transform((frame.to(torch.float32)/255))    
+                    frame = frame.to(torch.float32)/255
+                    frame = frame - self.mean
+                    frame = frame / self.std
+                    
                                  
-                video_frames1 = video_frames1.permute(1,0,2,3)
-                video_frames2 = video_frames2.permute(1,0,2,3)  
+                video_frames1 = video_frames1.permute(3,0,1,2)
+                video_frames2 = video_frames2.permute(3,0,1,2)  
             
             video_frames1 = torch.nn.functional.interpolate(video_frames1.float(), size=(224, 224), mode='bilinear')
             video_frames2 = torch.nn.functional.interpolate(video_frames2.float(), size=(224, 224), mode='bilinear')
