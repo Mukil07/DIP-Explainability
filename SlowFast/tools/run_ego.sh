@@ -1,23 +1,24 @@
 #!/bin/bash
 
-#SBATCH -A mobility_arfs
-#SBATCH -c 10
+#SBATCH -A kcis
+#SBATCH -c 14
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=ego.txt
-#SBATCH --nodelist=gnode107
-#SBATCH --partition=ihub
+#SBATCH --output=ego_new2.txt
+#SBATCH --nodelist=gnode120
+#SBATCH --partition=lovelace
+#SBATCH --qos=kl4
 
-conda activate eye
+
+source activate eye
 module load u18/cuda/11.6
-
-
 cd /scratch/mukil/SlowFast
+
+#ego bottlenekc
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/SlowFast"
 python tools/run_net_final.py \
   --cfg configs/Kinetics/MVITv2_S_CBM.yaml \
-  --opts TRAIN.BATCH_SIZE 2 TEST.BATCH_SIZE 2 \
+  --opts TRAIN.BATCH_SIZE 8 TEST.BATCH_SIZE 8 \
   CBM.N_ATTR 17 CBM.MUL_CLASSES 15 \
   CBM.MULTITASK True CBM.BOTTLENECK True \
-  CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False SOLVER.MAX_EPOCH 50 OUTPUT_DIR ./ego
+  CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False TRAIN.AUTO_RESUME True SOLVER.MAX_EPOCH 200 OUTPUT_DIR ./ego

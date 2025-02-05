@@ -96,8 +96,8 @@ def decode_video(video_path, start,end, num_frames=16):
         while len(frames) < num_frames:
             frames.append(frames[-1])
     except:
-        print(len(frames),start,end,frame_rate)
-        print("AAAAAAAAAAAAAA",video_path)
+        # print(len(frames),start,end,frame_rate)
+        # print("AAAAAAAAAAAAAA",video_path)
         flag=True
         
     return np.array(frames),flag
@@ -195,7 +195,7 @@ class CustomDataset(Dataset):
                     print("Reached end of dataset, resetting idx to 0")
                 continue  
             
-            if random.random() < 0.5:  
+            if random.random() < -1:  
                 video_frames1 = np.flip(video_frames1, axis=2)  # Flip width axis (W)
                 video_frames2 = np.flip(video_frames2, axis=2) 
                 target = self.flip(target)
