@@ -134,6 +134,7 @@ class ImgVisualizer(Visualizer):
         """
         if not isinstance(box_facecolors, list):
             box_facecolors = [box_facecolors] * len(text_ls)
+        #import pdb;pdb.set_trace()
         assert len(box_facecolors) == len(
             text_ls
         ), "Number of colors provided is not equal to the number of text labels."
@@ -380,13 +381,13 @@ class VideoVisualizer:
         assert mode in ["top-k", "thres"], "Mode {} is not supported.".format(mode)
         self.mode = mode
         self.num_classes = num_classes
-        self.class_names, _, _ = get_class_names(class_names_path, None, None)
+        #self.class_names, _, _ = get_class_names(class_names_path, None, None)
         self.top_k = top_k
         self.thres = thres
         self.lower_thres = lower_thres
 
-        if mode == "thres":
-            self._get_thres_array(common_class_names=common_class_names)
+        # if mode == "thres":
+        #     self._get_thres_array(common_class_names=common_class_names)
 
         self.color_map = plt.get_cmap(colormap)
 
@@ -452,15 +453,15 @@ class VideoVisualizer:
 
         # Create labels top k predicted classes with their scores.
         text_labels = []
-        for i in range(n_instances):
-            text_labels.append(
-                _create_text_labels(
-                    top_classes[i],
-                    top_scores[i],
-                    self.class_names,
-                    ground_truth=ground_truth,
-                )
-            )
+        # for i in range(n_instances):
+        #     text_labels.append(
+        #         _create_text_labels(
+        #             top_classes[i],
+        #             top_scores[i],
+        #             self.class_names,
+        #             ground_truth=ground_truth,
+        #         )
+        #     )
         frame_visualizer = ImgVisualizer(frame, meta=None)
         font_size = min(max(np.sqrt(frame.shape[0] * frame.shape[1]) // 35, 5), 9)
         top_corner = not ground_truth
@@ -492,7 +493,8 @@ class VideoVisualizer:
                     alpha=text_alpha,
                 )
         else:
-            text = text_labels[0]
+            #text = text_labels[0]
+            text = ["test"]
             pred_class = top_classes[0]
             colors = [self._get_color(pred) for pred in pred_class]
             frame_visualizer.draw_multiple_text(

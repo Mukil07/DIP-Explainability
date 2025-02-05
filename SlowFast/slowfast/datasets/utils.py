@@ -320,6 +320,7 @@ def revert_tensor_normalize(tensor, mean, std):
         mean (tensor or list): mean value to add.
         std (tensor or list): std to multiply.
     """
+    
     if type(mean) == list:
         mean = torch.tensor(mean)
     if type(std) == list:

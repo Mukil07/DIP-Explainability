@@ -76,12 +76,13 @@ class GradCAM:
                 each corresponding input.
             preds (tensor): shape (n_instances, n_class). Model predictions for `inputs`.
         """
+        #import pdb;pdb.set_trace()
         assert (
             len(inputs) == len(self.target_layers)
         ), "Must register the same number of target layers as the number of input pathways."
         input_clone = [inp.clone() for inp in inputs]
-        preds = self.model(input_clone)
-
+        preds = self.model(input_clone[0],input_clone[1])
+        preds = preds[0]
         if labels is None:
             score = torch.max(preds, dim=-1)[0]
         else:
@@ -95,7 +96,7 @@ class GradCAM:
         localization_maps = []
         for i, inp in enumerate(inputs):
             _, _, T, H, W = inp.size()
-
+            
             gradients = self.gradients[self.target_layers[i]]
             activations = self.activations[self.target_layers[i]]
             B, C, Tg, _, _ = gradients.size()
@@ -104,6 +105,7 @@ class GradCAM:
 
             weights = weights.view(B, C, Tg, 1, 1)
             localization_map = torch.sum(weights * activations, dim=1, keepdim=True)
+            
             localization_map = F.relu(localization_map)
             localization_map = F.interpolate(
                 localization_map,
@@ -144,24 +146,31 @@ class GradCAM:
             preds (tensor): shape (n_instances, n_class). Model predictions for `inputs`.
         """
         result_ls = []
+        #import pdb;pdb.set_trace()
         localization_maps, preds = self._calculate_localization_map(
             inputs, labels=labels
         )
+
         for i, localization_map in enumerate(localization_maps):
             # Convert (B, 1, T, H, W) to (B, T, H, W)
+
             localization_map = localization_map.squeeze(dim=1)
             if localization_map.device != torch.device("cpu"):
                 localization_map = localization_map.cpu()
+           
+            
             heatmap = self.colormap(localization_map)
             heatmap = heatmap[:, :, :, :, :3]
             # Permute input from (B, C, T, H, W) to (B, T, H, W, C)
+            #import pdb;pdb.set_trace()
             curr_inp = inputs[i].permute(0, 2, 3, 4, 1)
             if curr_inp.device != torch.device("cpu"):
                 curr_inp = curr_inp.cpu()
-            curr_inp = data_utils.revert_tensor_normalize(
-                curr_inp, self.data_mean, self.data_std
-            )
-            heatmap = torch.from_numpy(heatmap)
+            # curr_inp = revert_tensor_normalize(
+            #     curr_inp, self.data_mean, self.data_std
+            # )
+            
+            heatmap = torch.from_numpy(heatmap)*255
             curr_inp = alpha * heatmap + (1 - alpha) * curr_inp
             # Permute inp to (B, T, C, H, W)
             curr_inp = curr_inp.permute(0, 1, 4, 2, 3)

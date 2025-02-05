@@ -410,6 +410,7 @@ _C.MODEL.SINGLE_PATHWAY_ARCH = [
     "x3d",
     "mvit",
     "maskmvit",
+    "mvit_cbm"
 ]
 
 # Model architectures that has multiple pathways.

@@ -221,11 +221,12 @@ class GetWeightAndActivation:
                 {layer_name: list of activations}, where activations are outputs returned
                 by the layer.
         """
+        #import pdb;pdb.set_trace()
         input_clone = [inp.clone() for inp in input]
         if bboxes is not None:
             preds = self.model(input_clone, bboxes)
         else:
-            preds = self.model(input_clone)
+            preds = self.model(input_clone[0],input_clone[1])
 
         activation_dict = {}
         for layer_name, hook in self.hooks.items():
@@ -333,6 +334,7 @@ def get_layer(model, layer_name):
     """
     layer_ls = layer_name.split("/")
     prev_module = model
+
     for layer in layer_ls:
         prev_module = prev_module._modules[layer]
 
