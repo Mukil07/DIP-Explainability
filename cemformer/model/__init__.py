@@ -9,6 +9,7 @@ from model.multi_mae_test import Multi_Mae_test
 #from model.cbm import ModelXtoCtoY
 from model.i3d.cbm import ModelXtoCtoY
 from model.i3d.i3d_lstm import ModelXtoCtoY_lstm 
+from model.multi_mae_cross import Multi_Mae_cross
 def build_model(args):
 
     if args.model == 'vit':
@@ -48,6 +49,11 @@ def build_model(args):
 
         return Multi_Mae_test(args.num_classes,args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
                  args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)     
+    
+    elif args.model == 'multimae_cross':
+
+        return Multi_Mae_cross(args.num_classes,args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)    
     else :
         print("Original DINO VIT is being used here ")
         return vit_base()

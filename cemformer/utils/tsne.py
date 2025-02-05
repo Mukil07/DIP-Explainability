@@ -17,7 +17,7 @@ class plot_tsne():
         labels = torch.vstack(labels).detach().cpu().numpy()
         # Apply t-SNE
         if mode == 'dipx':
-            custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink']
+            custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink','black']
         else:
             custom_colors = ['red', 'blue', 'green', 'purple', 'orange']
         tab5_custom = ListedColormap(custom_colors)

@@ -8,7 +8,7 @@ import torch.optim as optim
 import torchvision
 from tqdm.auto import tqdm
 import os
-
+import matplotlib.pyplot as plt
 from captum.attr import Occlusion,IntegratedGradients
 
 from torch.nn.utils import clip_grad_norm_
@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 
-from utils.tsne import plot_tsne as TSNE
+from utils.tsne_v2 import plot_tsne as TSNE
 from utils.plot_confusion import confusion
 from utils.DIPX_v2 import CustomDataset
 from model import build_model
@@ -108,12 +108,124 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
     all_labels_ego = []
 
     val_loss_running=0
+    final_flag = False
+    anchor_FEAT= []
+    anchor_LABEL = (np.ones(17)*7).astype(np.uint8).tolist()
+    anchor_LABEL = [torch.tensor([num]) for num in anchor_LABEL]
+    final_FEAT=[]
+    for index in range(0,17):
+
+        FEAT=[]
+        LABEL=[]
+        with torch.no_grad():
+            
+            for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
+                #import pdb;pdb.set_trace()
+                if ego[index] == 1:
+                    #import pdb;pdb.set_trace()
+                    img1 = img1.to(device)
+                    img2 = img2.to(device)
+
+                    label = cls.to(device)
+
+                    # Forward pass
+
+                    img1=img1.type(torch.cuda.FloatTensor)
+                    img2=img2.type(torch.cuda.FloatTensor)
+                    outputs = model(img1,img2) 
+                    
+                    feat = model.first_model.feat
+                
+                    if args.grad_cam:
+                        attributions_ig  = cap.attribute(img1, target=label, n_steps=200)
+
+                    loss1 = criterion1(outputs[0],label)  
+                    
+                    if args.gaze_cbm:
+
+                        loss3 = lam2*criterion3(outputs[1],torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),gaze.cuda())
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(outputs[2],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())          
+                        predicted_ego = (torch.sigmoid(outputs[1]) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+                    elif args.ego_cbm:
+                            
+                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(outputs[1],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())    
+                        predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                    #import pdb;pdb.set_trace()
+                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+
+                    elif args.combined_bottleneck:
+                        #import pdb;pdb.set_trace()
+                        loss2 = lam1*criterion2(torch.hstack(outputs[1:16]),gaze.cuda())
+                        loss3 = lam2*criterion3(torch.hstack(outputs[16:33]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+                        loss = loss1 + loss2 + loss3
+                        predicted_gaze = torch.argmax(torch.hstack(outputs[1:16]),dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu())          
+                        predicted_ego = (torch.sigmoid(torch.hstack(outputs[16:33])) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())    
+
+                    elif args.multitask:
+
+                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).to(device))
+
+                        loss = loss1 + loss2 + loss3
+                        #import pdb;pdb.set_trace()
+                        predicted_gaze = torch.argmax(outputs[1],dim=1)
+                        all_preds_gaze.append(predicted_gaze.cpu())
+                        all_labels_gaze.append(gaze.cpu()) 
+                        #import pdb;pdb.set_trace()
+                        predicted_ego = (torch.sigmoid(outputs[2]) > 0.5).float().cpu()
+                        all_preds_ego.append(predicted_ego)
+                        all_labels_ego.append(torch.hstack(ego).to(dtype=torch.float).unsqueeze(0).cpu())
+
+                    else:
+
+                        loss = loss1
+
+                    val_loss_running+=loss
+
+                    predicted = torch.argmax(outputs[0],dim=1)
+                    
+
+                    all_preds.append(predicted.cpu())
+                    all_labels.append(label.cpu())
+
+                    FEAT.append(feat.cpu())
+                    LABEL.append(label.cpu())
+
+                    del img1
+                    del img2 
+                    del label
+                    del outputs
+               
+        #import pdb;pdb.set_trace()
+        anchor_FEAT.append(torch.vstack(FEAT).mean(dim=0).unsqueeze(0))
+        
+################################
+
     FEAT=[]
     LABEL=[]
     with torch.no_grad():
-
+        
         for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
-
+        
+            #import pdb;pdb.set_trace()
             img1 = img1.to(device)
             img2 = img2.to(device)
 
@@ -126,7 +238,7 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             outputs = model(img1,img2) 
             
             feat = model.first_model.feat
-           
+        
             if args.grad_cam:
                 attributions_ig  = cap.attribute(img1, target=label, n_steps=200)
 
@@ -204,10 +316,15 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             del img2 
             del label
             del outputs
-    #ssimport pdb;pdb.set_trace()
-    tsne = TSNE()
-    tsne_img = tsne.plot(FEAT,LABEL,args.dataset)
 
+################################
+
+    final_FEAT = FEAT + anchor_FEAT
+    LABEL = LABEL + anchor_LABEL
+    tsne = TSNE()
+    tsne_img = tsne.plot(final_FEAT,LABEL,args.dataset)
+
+    plt.savefig('tsne.png')
     all_labels = np.hstack(all_labels)
     all_preds = np.hstack(all_preds)
 
@@ -300,7 +417,7 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    val_csv = "/scratch/mukil/dipx/test.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     
 
     val_subset = CustomDataset(val_csv, debug=args.debug)

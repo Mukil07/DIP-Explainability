@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH -A kcis
-#SBATCH -c 14
+#SBATCH -A mukilan
+#SBATCH -c 9
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
 #SBATCH --output=i3d_ego.txt
-#SBATCH --nodelist=gnode120
-#SBATCH --partition=lovelace
+#SBATCH --nodelist=gnode055
+#SBATCH --partition=long
 #SBATCH --job-name=i3d_ego
-#SBATCH --qos=kl4
+
 
 
 source activate sf
