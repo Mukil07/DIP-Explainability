@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import pickle
-
+import os 
 import numpy as np
 import cv2
 import slowfast.datasets.utils as data_utils
@@ -99,7 +99,7 @@ def run_visualization(vis_loader, model, cfg, writer=None):
         #                 val[i] = val[i].cuda(non_blocking=True)
         #         else:
         #             meta[key] = val.cuda(non_blocking=True)
-        if cur_iter <3:
+        if cur_iter <50:
             batch_size = cfg.TEST.BATCH_SIZE
             *images,cls,gaze,ego = batch
             
@@ -197,7 +197,8 @@ def run_visualization(vis_loader, model, cfg, writer=None):
                                 frames = vid
                                 fps = 5  # Frames per second
                                 height, width, _ = frames[0].shape  # Extract frame dimensions
-                                video_writer = cv2.VideoWriter(f"output{cur_iter}_{path_idx}.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+                                os.makedirs('visualize_cam',exist_ok=True)
+                                video_writer = cv2.VideoWriter(f"./visualize_cam/output{cur_iter}_{path_idx}.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
 
                                 # Write frames to video
 

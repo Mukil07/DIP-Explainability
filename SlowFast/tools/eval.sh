@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=nobottle_eval.txt
+#SBATCH --output=cam.txt
 #SBATCH --nodelist=gnode105
 #SBATCH --partition=ihub
 

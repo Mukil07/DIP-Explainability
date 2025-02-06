@@ -279,8 +279,6 @@ def train(cfg):
     # Create a GradScaler for mixed precision training
     scaler = torch.cuda.amp.GradScaler(enabled=cfg.TRAIN.MIXED_PRECISION)
 
-    import pdb;pdb.set_trace()
-
     start_epoch = 0
 
 

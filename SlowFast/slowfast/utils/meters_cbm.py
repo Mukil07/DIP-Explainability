@@ -797,7 +797,7 @@ class ValMeter:
             self.all_labels_gaze.append(gaze.cpu())    
             predicted_ego = (torch.sigmoid(torch.hstack(preds[2:])) > 0.5).float().cpu()
             self.all_preds_ego.append(predicted_ego)
-        
+            self.all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu()) 
         elif self._cfg.CBM.COMB_BOTTLE:
 
             predicted_gaze = torch.argmax(torch.hstack(preds[1:16]),dim=1)
@@ -868,10 +868,13 @@ class ValMeter:
             # for ego and gaze 
             if self._cfg.CBM.EGO_CBM or self._cfg.CBM.COMB_BOTTLE or self._cfg.CBM.MULTITASK or self._cfg.CBM.GAZE_CBM:
                 #import pdb;pdb.set_trace()
-                self.all_preds_gaze = torch.hstack(self.all_preds_gaze)
-                self.all_labels_gaze = torch.hstack(self.all_labels_gaze)
-                self.all_preds_ego = torch.hstack(self.all_preds_ego)
-                self.all_labels_ego = torch.hstack(self.all_labels_ego)                
+                try:
+                    self.all_preds_gaze = torch.hstack(self.all_preds_gaze)
+                    self.all_labels_gaze = torch.hstack(self.all_labels_gaze)
+                    self.all_preds_ego = torch.vstack(self.all_preds_ego).flatten()
+                    self.all_labels_ego = torch.vstack(self.all_labels_ego).flatten()
+                except:
+                    print("stacking of preds and labels didnt not happen properly")
                 accuracy_val_gaze = accuracy_score(self.all_labels_gaze, self.all_preds_gaze)
                 f1_val_gaze = f1_score(self.all_labels_gaze, self.all_preds_gaze, average='weighted') #'weighted' or 'macro' s
                 

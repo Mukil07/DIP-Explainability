@@ -56,3 +56,7 @@ json_stats: {"RAM": "8.12/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_m
 json_stats: {"RAM": "8.07/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 8.86633, "top1_err": 0.00000, "top5_err": 0.00000}
 json_stats: {"RAM": "8.19/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 9.08657, "top1_err": 0.00000, "top5_err": 0.00000}
 json_stats: {"RAM": "8.16/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 9.11841, "top1_err": 0.00000, "top5_err": 0.00000}
+json_stats: {"RAM": "7.96/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 9.23070, "top1_err": 0.00000, "top5_err": 0.00000}
+json_stats: {"RAM": "7.94/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 8.93961, "top1_err": 0.00000, "top5_err": 0.00000}
+json_stats: {"RAM": "8.03/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 8.83227, "top1_err": 0.00000, "top5_err": 0.00000}
+json_stats: {"RAM": "9.32/251.57G", "_type": "val_epoch", "epoch": "1/1", "gpu_mem": "0.71G", "min_top1_err": 0.00000, "min_top5_err": 0.00000, "time_diff": 8.85632, "top1_err": 0.00000, "top5_err": 0.00000}
