@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_250 import CustomDataset
 from model import build_model
 
 

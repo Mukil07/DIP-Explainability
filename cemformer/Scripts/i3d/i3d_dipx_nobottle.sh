@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH -A mukilan
-#SBATCH -c 9
+#SBATCH -A mobility_arfs
+#SBATCH -c 11
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
 #SBATCH --output=output_DIPX/i3d_nobottle_new.txt
-#SBATCH --nodelist=gnode056
-#SBATCH --partition=long
+#SBATCH --nodelist=gnode102
+#SBATCH --partition=ihub
 
 
 
@@ -33,10 +33,10 @@ export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
 # python i3d/main_dipx_i3d.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
 #     --dropout 0.45 --n_attributes 0 
 
-python i3d/i3d_final.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET \
+python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET \
     --technique $TECH --dropout 0.45 --n_attributes 0 
 
 
-MODEL=i3d_lstm
-python i3d/i3d_final.py --model $MODEL --batch 1 ----num_classes 7 --dataset $DATASET \
-    --technique $TECH --dropout 0.45 --n_attributes 0 
+# MODEL=i3d_lstm
+# python i3d/i3d_final.py --model $MODEL --batch 1 ----num_classes 7 --dataset $DATASET \
+#     --technique $TECH --dropout 0.45 --n_attributes 0 

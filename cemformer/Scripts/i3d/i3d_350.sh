@@ -5,9 +5,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/i3d_gaze_new.txt
+#SBATCH --output=output_DIPX/i3d_350.txt
 #SBATCH --nodelist=gnode102
 #SBATCH --partition=ihub
+#SBATCH --job-name=i3d_350
+
+
 
 
 source activate sf
@@ -15,7 +18,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=i3d_ego
+TECH=i3d_nobottle
 MODEL=cbm
 DATASET=dipx
 
@@ -28,7 +31,9 @@ rm -rf $runs
 # python aria_gaze.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
 #     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
+# python i3d/main_dipx_i3d.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
+#     --dropout 0.45 --n_attributes 0 
 
-python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
-    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
+python i3d/i3d_350.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET \
+    --technique $TECH --dropout 0.45 --n_attributes 0 
 
