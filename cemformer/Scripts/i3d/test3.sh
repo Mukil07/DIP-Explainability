@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=2G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/i3d_gaze_new.txt
+#SBATCH --output=output_DIPX/ev3.txt
 #SBATCH --nodelist=gnode067
 #SBATCH --partition=long
 
@@ -29,6 +29,6 @@ rm -rf $runs
 #     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
 
-python eval.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
+python ev/eval3.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
 

@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn.manifold import TSNE
-
+import matplotlib.lines as mlines
 class plot_tsne():
     def __init__(self, perplexity=10, random_state=42, n_comp=2):
         self.tsne = TSNE(perplexity=perplexity, n_components=n_comp, random_state=random_state)
@@ -12,8 +12,9 @@ class plot_tsne():
         # (Assuming features is a list of tensors and labels is a nested list of tensors)
         features_np = torch.vstack(features).detach().cpu().numpy()
         # Flatten labels if needed (you already have nested lists/tensors)
-        labels_list = [ten for unit in labels for ten in unit]
-        labels_np = torch.vstack(labels_list).detach().cpu().numpy().squeeze()  # make sure it's 1D
+
+        #labels_list = [ten for unit in labels for ten in unit]
+        labels_np = torch.vstack(labels).detach().cpu().numpy().squeeze()  # make sure it's 1D
 
         # Define the colormap: for mode 'dipx' class 7 will be black.
         if mode == 'dipx':
@@ -22,7 +23,8 @@ class plot_tsne():
             custom_colors = ['red', 'blue', 'green', 'purple', 'orange']
 
         cmap = ListedColormap(custom_colors)
-
+        class_names = ['Straight', 'SlowDown', 'Left_Turn', 'Left_LC', 'Right_Turn', 'Right_LC', 'UTurn']
+        colors = [cmap(i) for i in range(len(class_names))]
         # Apply t-SNE
         reduced_features = self.tsne.fit_transform(features_np)
 
@@ -44,13 +46,12 @@ class plot_tsne():
             c=non_black_labels,
             cmap=cmap,
             s=50,
-            label='Other classes'
         )
 
         # For the black points, use a list of unique markers.
         # You can choose as many markers as needed. Here is an example list.
-        unique_markers = ['o', 's', '^', 'v', '<', '>', '1', '2', '3', '4',
-                          'p', '*', 'h', 'H', 'D', 'd', 'P', 'X', '8']
+        unique_markers = ['X', 's', '^', 'v', '<', '>', '1', '2', '3', '4',
+                          'p', '*', 'h', 'H', 'D', 'd', 'P','o' , '8']
         black_points = reduced_features[mask_black]
 
         # Check that you have enough unique markers
@@ -66,13 +67,22 @@ class plot_tsne():
                 point[1],
                 color='black',  # Use black color for class 7.
                 marker=unique_markers[i],
-                s=50,
-                label=f'Class 7 instance {i+1}'  if i == 0 else ""  # Only add a label once to avoid duplicate legend entries.
+                s=80,
             )
+        
+        legend_handles = [
+            mlines.Line2D([], [], color=colors[i], marker='o', linestyle='None', markersize=8, label=class_names[i])
+            for i in range(len(class_names))
+        ]
 
+        # 2. Legend for anchor (black) points
+        anchor_legend = mlines.Line2D([], [], color='black', marker='X', linestyle='None', markersize=10, label='Anchor Label')
+        legend_handles.append(anchor_legend)
+
+        # Add legend
+        ax.legend(handles=legend_handles, title="Classes", loc="best")
         # Add a colorbar for the non-black points
         colorbar = fig.colorbar(scatter, ax=ax, label='Classes')
         ax.set_title('t-SNE Visualization')
-        ax.legend()
 
         return fig
