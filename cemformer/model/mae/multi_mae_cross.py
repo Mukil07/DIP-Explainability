@@ -26,7 +26,9 @@ class Adapter(nn.Module):
         self.bottleneck = bottleneck
         self.n_attributes = n_attributes
         self.all_fc = nn.ModuleList()
-       
+
+        self.dim = dim
+
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
         else:
@@ -55,7 +57,6 @@ class Adapter(nn.Module):
         id2label = {i: label for label, i in label2id.items()}
         model_ckpt = "MCG-NJU/videomae-base"
 
-        image_processor = VideoMAEImageProcessor.from_pretrained(model_ckpt)
         self.model1 = VideoMAEForVideoClassification.from_pretrained(
             model_ckpt,
             label2id=label2id,
@@ -80,45 +81,36 @@ class Adapter(nn.Module):
 
         self.apply(self._init_weights)
 
-
+        
+        self.tubelet_size = self.model1.config.tubelet_size
+        self.patch_size = self.model1.config.patch_size
         # Set device
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Load the CLIP model (e.g., ViT-B/32) and its preprocessing
-        model_clip, preprocess = clip.load("ViT-B/32", device=device)
-        model_clip.eval()  # Set to evaluation mode
+        # pushing the text embedding to vidoe space 
+        self.text2vid = nn.Linear(512,768).to(device)
+        self.final_mlp = nn.Linear(512,7).to(device)
+        self.final_gaze = nn.Linear(512,15).to(device)
+        self.pool = nn.MaxPool3d(kernel_size=(2, 2, 2))
+        # loading the clip model 
+        # model_clip, preprocess = clip.load("ViT-B/32", device=device)
+        # model_clip.eval()
 
-        # Define your 17 explanation texts
-        explanations = [
-            "Explanation text number 1.",
-            "Explanation text number 2.",
-            "Explanation text number 3.",
-            "Explanation text number 4.",
-            "Explanation text number 5.",
-            "Explanation text number 6.",
-            "Explanation text number 7.",
-            "Explanation text number 8.",
-            "Explanation text number 9.",
-            "Explanation text number 10.",
-            "Explanation text number 11.",
-            "Explanation text number 12.",
-            "Explanation text number 13.",
-            "Explanation text number 14.",
-            "Explanation text number 15.",
-            "Explanation text number 16.",
-            "Explanation text number 17."
-        ]
+        #  17 explanation texts
+        # explanations = [
+        # ]
+        # assert len(explanations) == 17, "please bro, provide exactly 17 explanations."
 
-        assert len(explanations) == 17, "Please provide exactly 17 explanations."
+        # tokenized_text = clip.tokenize(explanations).to(device)
+        # with torch.no_grad():
+        #     text_features = model_clip.encode_text(tokenized_text)
 
-        tokenized_text = clip.tokenize(explanations).to(device)
-        with torch.no_grad():
-            text_features = model_clip.encode_text(tokenized_text)
-        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-        print("Shape of text embeddings:", text_features.shape)  # Expected: (17, embed_dim)
-
-        self.text_feat = text_features
+        self.text_feat = torch.load("/scratch/mukil/cemformer/weights/text_feat.pt")
+        self.text_feat = self.text_feat / self.text_feat.norm(dim=-1, keepdim=True)
+        
+        self.text_feat = self.text2vid(self.text_feat.to(torch.float32)).detach() 
+        print("Shape of text embeddings:", self.text_feat.shape) 
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -134,30 +126,32 @@ class Adapter(nn.Module):
             nn.init.constant_(m.bias, 0.0)
 
     def forward(self, img1,img2):
-        #import pdb;pdb.set_trace()
         
+        B,T,c,H,W = img1['pixel_values'].shape
+        T_emb = (T//self.tubelet_size)
+        H_emb = W_emb = (H//self.patch_size)
+
         seq1,ori1 = self.model1(**img1)
         seq2,ori2 = self.model2(**img2)
 
-        #import pdb;pdb.set_trace()
         x = torch.cat((seq1,seq2),dim=-1)
         ori = torch.cat((ori1,ori2),dim=-1)
-        self.feat = x
-        import pdb;pdb.set_trace()
-        attn_value = self.attn(ori,self.text_feat)
-        out = []
-        #x= x.permute((0,2,3,4,1))
-        if self.n_attributes == 0:
-            out.append(x)
-            return out
-        for fc in self.all_fc:
-            out.append(fc(x))
-        
-        if self.n_attributes > 0 and not self.bottleneck and self.cy_fc is not None:
-            attr_preds = torch.cat(out[1:], dim=1)
-            out[0] += self.cy_fc(attr_preds)
+        C = self.dim
 
-        return out
+        ori_3d = ori.reshape(B, T_emb, H_emb, W_emb, C)
+
+        ori_3d = ori_3d.permute((0,-1,1,2,3))
+        ori_3d = self.pool(ori_3d).flatten(2).permute(0,2,1)
+
+        # cross attention is performed here 
+        text_feature = self.text_feat.unsqueeze(0).repeat(ori.shape[0],1,1)
+        attn_value = self.attn(ori_3d,text_feature)
+
+        x = self.final_mlp(attn_value)
+        gaze = self.final_gaze(attn_value)
+        x = x.mean(1)
+        gaze = gaze.mean(1)
+        return x,gaze
 
 
 class FC(nn.Module):
@@ -193,27 +187,4 @@ def Multi_Mae_cross(num_classes, multitask_classes, multitask, n_attributes, bot
     model1 = Adapter(num_classes = num_classes,n_attributes=n_attributes,
                   bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY,dropout=dropout)
 
-    model2 = MLP(input_dim=n_attributes, num_classes=num_classes, expand_dim=expand_dim)
-
-    if n_attributes>0:
-    
-        if multitask:
-            model3 = MLP(input_dim=n_attributes, num_classes=multitask_classes, expand_dim=expand_dim)
-            model4 = None
-            return End2EndModel(model1, model2, model3, model4, multitask,  n_attributes, use_relu, use_sigmoid)
-        else:
-            model3 = None
-            model4= None
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
-    else:
-        if multitask:
-            model2 = MLP(input_dim=1536, num_classes=num_classes, expand_dim=expand_dim)
-            model3 = MLP(input_dim=1536, num_classes=15, expand_dim=expand_dim) # gaze head 
-            model4 = MLP(input_dim=1536, num_classes=17, expand_dim=expand_dim) # ego head 
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
-
-        else:
-            model2 = MLP(input_dim=1536, num_classes=num_classes, expand_dim=expand_dim)
-            model3 = None
-            model4 = None
-            return End2EndModel(model1, model2, model3, model4, multitask, n_attributes, use_relu, use_sigmoid)
+    return model1

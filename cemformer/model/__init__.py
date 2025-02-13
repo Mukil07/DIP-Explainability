@@ -51,7 +51,7 @@ def build_model(args):
                  args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)     
     
     elif args.model == 'multimae_cross':
-        from model.multi_mae_cross import Multi_Mae_cross
+        from model.mae.multi_mae_cross import Multi_Mae_cross
         return Multi_Mae_cross(args.num_classes,args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
                  args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)    
     else :

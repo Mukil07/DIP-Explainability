@@ -66,14 +66,14 @@ def Trainer(args, train_subset, valid_subset ):
 
     # else:
 
-    for param in model.first_model.parameters():
-        param.requires_grad = False
-    for layer in model.first_model.model1.videomae.encoder.layer:
-        for param in layer.attention.parameters():
-            param.requires_grad = True
-    for layer in model.first_model.model2.videomae.encoder.layer:
-        for param in layer.attention.parameters():
-            param.requires_grad = True
+    # for param in model.first_model.parameters():
+    #     param.requires_grad = False
+    # for layer in model.first_model.model1.videomae.encoder.layer:
+    #     for param in layer.attention.parameters():
+    #         param.requires_grad = True
+    # for layer in model.first_model.model2.videomae.encoder.layer:
+    #     for param in layer.attention.parameters():
+    #         param.requires_grad = True
 
 
     #import pdb;pdb.set_trace()
@@ -184,8 +184,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
 
             outputs = model(inputs1,inputs2)
-            #import pdb;pdb.set_trace()
-            feat = model.first_model.feat
+
+            #feat = model.first_model.feat
             
             loss1 = criterion1(outputs[0],label)  
             #import pdb;pdb.set_trace()
@@ -198,8 +198,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             elif args.ego_cbm:
                 #import pdb;pdb.set_trace()
                 loss3 = lam2*criterion3(outputs[1],gaze.cuda().to(device))
-                loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                loss = loss1 + loss2 + loss3
+                #loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+                loss = loss3 +loss1 
 
 
             
@@ -327,7 +327,7 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                             img,_ = grad([inputs1,inputs2],label)
                             # visualize(img[0].squeeze(0))
 
-                    feat = model.first_model.feat
+                    #feat = model.first_model.feat
 
 
                     loss1 = criterion1(outputs[0],label)  
@@ -347,15 +347,15 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                     elif args.ego_cbm:
                             
                         loss3 = lam2*criterion3(outputs[1],gaze.cuda())
-                        loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                        loss = loss1 + loss2 + loss3
+                        #loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
+                        loss = loss1  + loss3
                         predicted_gaze = torch.argmax(outputs[1],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
                         all_labels_gaze.append(gaze.cpu())    
-                        predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
-                        all_preds_ego.append(predicted_ego)
+                        # predicted_ego = (torch.sigmoid(torch.hstack(outputs[2:])) > 0.5).float().cpu()
+                        # all_preds_ego.append(predicted_ego)
                     #import pdb;pdb.set_trace()
-                        all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
+                        #all_labels_ego.append(torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cpu())
 
 
 
@@ -412,8 +412,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                 all_labels_gaze = np.hstack(all_labels_gaze)
                 all_preds_gaze = np.hstack(all_preds_gaze)
-                all_labels_ego = np.hstack(all_labels_ego)
-                all_preds_ego = np.hstack(all_preds_ego)    
+                # all_labels_ego = np.hstack(all_labels_ego)
+                # all_preds_ego = np.hstack(all_preds_ego)    
                 #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
                 #confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
             # for Action Classification 
@@ -432,12 +432,12 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 accuracy_val_gaze = accuracy_score(all_labels_gaze, all_preds_gaze)
                 f1_val_gaze = f1_score(all_labels_gaze, all_preds_gaze, average='weighted') #'weighted' or 'macro' s
                 
-                accuracy_val_ego = accuracy_score(all_labels_ego, all_preds_ego)
-                f1_val_ego = f1_score(all_labels_ego, all_preds_ego, average='weighted')
+                # accuracy_val_ego = accuracy_score(all_labels_ego, all_preds_ego)
+                # f1_val_ego = f1_score(all_labels_ego, all_preds_ego, average='weighted')
 
                 #'weighted' or 'macro' s
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
-                print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
+                #print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
 
                 #writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
                 #writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
@@ -455,7 +455,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
             #writer.add_scalar("F1/Validation", f1_val, epoch)
             #writer.add_scalar("F1/Train", f1_train, epoch)
-
+            accuracy_val_ego = 0 
+            f1_val_ego = 0
             if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
                 final_acc = (accuracy_val + accuracy_val_ego + accuracy_val_gaze)/3
             else:
@@ -553,3 +554,4 @@ if __name__ == '__main__':
     
     val_subset = CustomDataset(val_csv, debug=args.debug)
     Trainer(args, train_subset, val_subset)
+
