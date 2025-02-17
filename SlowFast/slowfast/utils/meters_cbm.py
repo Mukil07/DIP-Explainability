@@ -706,7 +706,8 @@ class ValMeter:
         self.accuracy_ego = 0.0
         self.f1score_ego = 0.0
 
-
+        self.f1score_ego_micro = 0.0
+        self.f1score_ego_macro = 0.0
         # Number of misclassified examples.
         self.num_top1_mis = 0
         self.num_top5_mis = 0
@@ -871,8 +872,12 @@ class ValMeter:
                 try:
                     self.all_preds_gaze = torch.hstack(self.all_preds_gaze)
                     self.all_labels_gaze = torch.hstack(self.all_labels_gaze)
-                    self.all_preds_ego = torch.vstack(self.all_preds_ego).flatten()
-                    self.all_labels_ego = torch.vstack(self.all_labels_ego).flatten()
+                    # self.all_preds_ego = torch.vstack(self.all_preds_ego).flatten()
+                    # self.all_labels_ego = torch.vstack(self.all_labels_ego).flatten()
+
+                    self.all_labels_ego = torch.cat(self.all_labels_ego, dim=0)  # Shape (N, 17)
+                    self.all_preds_ego = torch.cat(self.all_preds_ego, dim=0)    # Shape (N, 17)
+
                 except:
                     print("stacking of preds and labels didnt not happen properly")
                 accuracy_val_gaze = accuracy_score(self.all_labels_gaze, self.all_preds_gaze)
@@ -881,10 +886,15 @@ class ValMeter:
                 accuracy_val_ego = accuracy_score(self.all_labels_ego, self.all_preds_ego)
                 f1_val_ego = f1_score(self.all_labels_ego, self.all_preds_ego, average='weighted')
 
+                f1_val_ego_micro = f1_score(self.all_labels_ego, self.all_preds_ego, average='micro')
+                f1_val_ego_macro = f1_score(self.all_labels_ego, self.all_preds_ego, average='macro')
+                
                 stats["acc(gaze)"] = accuracy_val_gaze
                 stats["f1(gaze)"] = f1_val_gaze
                 stats["acc(ego)"] = accuracy_val_ego
                 stats["f1(ego)"] = f1_val_ego
+                stats["f1(ego_macro)"] = f1_val_ego_macro
+                stats["f1(ego_micro)"] = f1_val_ego_micro
 
                 if self.min_top1_err < top1_err:
                     
@@ -892,7 +902,9 @@ class ValMeter:
                     self.f1score_gaze  = f1_val_gaze
                     self.accuracy_ego = accuracy_val_ego
                     self.f1score_ego = f1_val_ego
-
+                    self.f1score_ego_macro = f1_val_ego_macro
+                    self.f1score_ego_micro = f1_val_ego_micro
+                    
                 # self.accuracy_gaze = max(self.accuracy_gaze,accuracy_val_gaze)
                 # self.f1score_gaze = max(self.f1score_gaze,f1_val_gaze)
                 # self.accuracy_gaze = max(self.accuracy_ego,accuracy_val_ego)

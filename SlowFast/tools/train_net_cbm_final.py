@@ -180,9 +180,9 @@ def train_epoch(
 
                 elif cfg.CBM.EGO_CBM:
     
-                    loss3 = lam2*criterion3(preds[1],gaze.cuda())
+                    #loss3 = lam2*criterion3(preds[1],gaze.cuda())
                     loss2 = lam1*criterion2(torch.hstack(preds[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).cuda(non_blocking=True))
-                    loss = loss + loss2 + loss3
+                    loss = loss + loss2 #+ loss3
 
                 elif cfg.CBM.COMB_BOTTLE:
 
@@ -592,6 +592,13 @@ def train(cfg):
     # if du.is_master_proc() and cfg.LOG_MODEL_INFO:
     #     flops, params = misc.log_model_info(model, cfg, use_train_input=True)
 
+    if cfg.CBM.EGO_CBM:
+        if cfg.NUM_GPUS >1:
+            for param in model.module.final_model.third_model.parameters():
+                param.requires_grad = False
+        else:
+            for param in model.final_model.third_model.parameters():
+                param.requires_grad = False
     # Construct the optimizer.
     optimizer = optim.construct_optimizer(model, cfg)
     # Create a GradScaler for mixed precision training
@@ -651,15 +658,15 @@ def train(cfg):
     #     else None
     # )
     #import pdb;pdb.set_trace()
-    train_csv = "/scratch/mukil/dipx/train_debug.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
     val_csv = "/scratch/mukil/dipx/val.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     #transform= None
     train_subset = CustomDataset(train_csv, transform =transform )
     val_subset = CustomDataset(val_csv,transform =transform)
 
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=cfg.TRAIN.BATCH_SIZE,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=cfg.TEST.BATCH_SIZE)
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=(cfg.TRAIN.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS,pin_memory=True, shuffle= True)
+    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=(cfg.TEST.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS)
 
 
     # Create meters.

@@ -289,8 +289,8 @@ def train(cfg):
     train_subset = CustomDataset(train_csv, transform =transform )
     val_subset = CustomDataset(val_csv,transform =transform)
 
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=cfg.TRAIN.BATCH_SIZE,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=cfg.TEST.BATCH_SIZE)
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=cfg.TRAIN.BATCH_SIZE//max(1,cfg.NUM_GPUS),pin_memory=True, shuffle= True)
+    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=cfg.TEST.BATCH_SIZE//max(1,cfg.NUM_GPUS))
 
 
     # Create meters.
