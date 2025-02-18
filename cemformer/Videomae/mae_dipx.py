@@ -75,6 +75,8 @@ def Trainer(args, train_subset, valid_subset ):
         for param in layer.attention.parameters():
             param.requires_grad = True
 
+    for param in model.third_model.parameters():
+        param.requires_grad= False
 
     #import pdb;pdb.set_trace()
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -116,15 +118,17 @@ def Trainer(args, train_subset, valid_subset ):
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=2, eta_min=0.000005)
     # Train and evaluate the model
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
+        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego,f1_ego_micro,f1_ego_macro = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",acc)
         print("Average F1",f1)
         print("Average Accuracy(Gaze)",acc_gaze)
         print("Average F1(Gaze)",f1_gaze)
         print("Average Accuracy(Ego)",acc_ego)
         print("Average F1(Ego)",f1_ego)
+        print("Average F1(EGO) micro",f1_ego_micro)
+        print("Average F1(EGO) macro",f1_ego_macro)
     else:
-        accuracy, f1 = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
+        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",accuracy)
         print("Average F1",f1)
         total_params = sum(p.numel() for p in model.parameters())
@@ -197,9 +201,9 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
             
             elif args.ego_cbm:
                 #import pdb;pdb.set_trace()
-                loss3 = lam2*criterion3(outputs[1],gaze.cuda().to(device))
+                #loss3 = lam2*criterion3(outputs[1],gaze.cuda().to(device))
                 loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                loss = loss1 + loss2 + loss3
+                loss = loss1 + loss2 #+ loss3
 
 
             
@@ -346,9 +350,9 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                     elif args.ego_cbm:
                             
-                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        #loss3 = lam2*criterion3(outputs[1],gaze.cuda())
                         loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((-1,-2)).to(device))
-                        loss = loss1 + loss2 + loss3
+                        loss = loss1 + loss2 #+ loss3
                         predicted_gaze = torch.argmax(outputs[1],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
                         all_labels_gaze.append(gaze.cpu())    
@@ -412,8 +416,11 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                 all_labels_gaze = np.hstack(all_labels_gaze)
                 all_preds_gaze = np.hstack(all_preds_gaze)
-                all_labels_ego = np.hstack(all_labels_ego)
-                all_preds_ego = np.hstack(all_preds_ego)    
+                # all_labels_ego = np.hstack(all_labels_ego)
+                # all_preds_ego = np.hstack(all_preds_ego)    
+                all_labels_ego = torch.cat(all_labels_ego, dim=0)  # Shape (N, 17)
+                all_preds_ego = torch.cat(all_preds_ego, dim=0)    # Shape (N, 17)
+
                 #confusion(all_labels_ego, all_preds_ego,'ego',writer,epoch)
                 #confusion(all_labels_gaze, all_preds_gaze,'gaze',writer,epoch)
             # for Action Classification 
@@ -434,11 +441,12 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 
                 accuracy_val_ego = accuracy_score(all_labels_ego, all_preds_ego)
                 f1_val_ego = f1_score(all_labels_ego, all_preds_ego, average='weighted')
-
+                f1_val_ego_micro = f1_score(all_labels_ego, all_preds_ego, average='micro')
+                f1_val_ego_macro = f1_score(all_labels_ego, all_preds_ego, average='macro')
                 #'weighted' or 'macro' s
                 print("accuracy and F1(GAZE)",accuracy_val_gaze,f1_val_gaze) 
                 print("accuracy and F1(EGO)",accuracy_val_ego,f1_val_ego) 
-
+                print("EGO Macro F1 and Micro F1",f1_val_ego_macro, f1_val_ego_micro)
                 #writer.add_scalar("Accuracy/Validation(Gaze)", accuracy_val_gaze, epoch)
                 #writer.add_scalar("F1/Validation(Gaze)", f1_val_gaze, epoch)
                 #writer.add_scalar("Accuracy/Validation(Ego)", accuracy_val_ego, epoch)
@@ -469,6 +477,8 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
                     best_gaze_acc = accuracy_val_gaze
                     best_gaze_f1 = f1_val_gaze
+                    best_ego_f1_macro = f1_val_ego_macro
+                    best_ego_f1_micro = f1_val_ego_micro
 
                 best_val_acc = accuracy_val
                 best_val_f1 = f1_val
@@ -491,11 +501,10 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 break
 
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        return best_val_acc,best_val_f1,best_gaze_acc,best_gaze_f1,best_ego_acc,best_ego_f1
+        return best_val_acc,best_val_f1,best_gaze_acc,best_gaze_f1,best_ego_acc,best_ego_f1,best_ego_f1_micro, best_ego_f1_macro
     else:
 
         return best_val_acc,best_val_f1
-    
     
 
 

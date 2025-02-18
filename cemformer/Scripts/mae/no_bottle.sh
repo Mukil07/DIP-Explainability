@@ -4,7 +4,7 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/MAE_DIPX_nobottle.txt
+#SBATCH --output=output_DIPX/nobottle_nogaze.txt
 #SBATCH --nodelist=gnode120
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4
@@ -17,7 +17,7 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=nobottle
+TECH=nobottle_nogaze
 MODEL=multimae_test
 DATASET=dipx
 
