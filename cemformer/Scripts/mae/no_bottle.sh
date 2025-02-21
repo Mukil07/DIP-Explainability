@@ -4,7 +4,7 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/nobottle_nogaze.txt
+#SBATCH --output=output_DIPX/nobottle_nogaze_new.txt
 #SBATCH --nodelist=gnode120
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4

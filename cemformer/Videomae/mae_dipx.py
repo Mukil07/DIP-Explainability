@@ -75,8 +75,9 @@ def Trainer(args, train_subset, valid_subset ):
         for param in layer.attention.parameters():
             param.requires_grad = True
 
-    for param in model.third_model.parameters():
-        param.requires_grad= False
+    if args.ego_cbm:
+        for param in model.third_model.parameters():
+            param.requires_grad= False
 
     #import pdb;pdb.set_trace()
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -118,7 +119,7 @@ def Trainer(args, train_subset, valid_subset ):
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=2, eta_min=0.000005)
     # Train and evaluate the model
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
-        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego,f1_ego_micro,f1_ego_macro = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego,f1_ego_micro,f1_ego_macro = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",acc)
         print("Average F1",f1)
         print("Average Accuracy(Gaze)",acc_gaze)
@@ -128,7 +129,7 @@ def Trainer(args, train_subset, valid_subset ):
         print("Average F1(EGO) micro",f1_ego_micro)
         print("Average F1(EGO) macro",f1_ego_macro)
     else:
-        accuracy, f1 = train(args, train_loader, val_loader, model, criterion1, criterion2, criterion3, optimizer, device,writer)
+        accuracy, f1 = train(args, train_loader, val_loader, model, scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
         print("Average Accuracy",accuracy)
         print("Average F1",f1)
         total_params = sum(p.numel() for p in model.parameters())
