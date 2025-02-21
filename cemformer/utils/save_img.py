@@ -7,12 +7,15 @@ def normalize(img):
     im = ((img - img.min()) / (img.max() - img.min())).permute((1, 2, 0)) * 255
     return im
 
-def visualize(frames, video_name="output_video.avi", fps=5):
+def visualize(frames, num, video_name="./visualize_camvid/output_video.avi", fps=5):
     save_dir = 'visualize_cam'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-
+    save_dirvid = f'visualize_camvid'
+    if not os.path.exists(save_dirvid):
+        os.mkdir(save_dirvid)
     # Save frames as images
+    video_name = f"./visualize_camvid/vid{num}.avi"
     for i, img in enumerate(frames):
         img = normalize(img)
         img = img.cpu().numpy().astype(np.uint8)

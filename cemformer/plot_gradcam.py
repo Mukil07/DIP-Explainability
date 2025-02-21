@@ -19,7 +19,7 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
     model.to(device)
     #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukil/cemformer/i3d/i3d_dipx/nobottle/best_cbm_dipx.pth',map_location=device)
+    ckp = torch.load('/scratch/mukil/cemformer/best_i3d_fine_dipx_i3d_ego_base1_dir/best_i3d_fine_dipx.pth',map_location=device)
 
     model.load_state_dict(ckp,strict=False)
     model.eval()
@@ -67,9 +67,9 @@ def val( valid_dataloader, model, device):
             #tar = ["first_model/MaxPool3d_5a_2x2_2", "first_model/MaxPool3d_5a_2x2_2"]
             #tar = ["first_model/Mixed_5c","first_model/Mixed_5c_2"]
             grad = GradCAM(model,tar,[0,0,0],[1,1,1])
-            import pdb;pdb.set_trace()
+            #import pdb;pdb.set_trace()
             img,_ = grad([img1,img2],label)
-            visualize(img[0].squeeze(0)) #for face image
+            visualize(img[1].squeeze(0),i) #for face image
 
 if __name__ == '__main__':
     seed = 37
