@@ -4,19 +4,21 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/ego_nogaze_new.txt
-#SBATCH --nodelist=gnode120
+#SBATCH --output=output_DIPX/fine_ego.txt
+#SBATCH --nodelist=gnode121
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4
+
+
+
 
 source activate sf
 module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=ego_nogaze
-MODEL=multimae_test
-# MODEL=multimae_cross
+TECH=ego
+MODEL=multimae_fine
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir

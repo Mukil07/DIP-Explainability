@@ -95,10 +95,10 @@ class Adapter(nn.Module):
     def forward(self, img1,img2):
         #import pdb;pdb.set_trace()
         
-        seq1 = self.model1(**img1)
-        seq2 = self.model2(**img2)
+        seq1,ori1 = self.model1(**img1)
+        seq2,ori2 = self.model2(**img2)
 
-        #import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
         x = torch.cat((seq1,seq2),dim=-1)
         self.feat = x
         out = []

@@ -8,7 +8,7 @@ import torch.optim as optim
 import torchvision
 from tqdm.auto import tqdm
 import os
-
+import psutil
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, CosineAnnealingWarmRestarts
 from torch.utils.tensorboard import SummaryWriter
@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from utils.tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_350 import CustomDataset
 from model import build_model
 
 
@@ -36,7 +36,7 @@ def Trainer(args, train_subset, valid_subset ):
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
     model.to(device)
-
+    
 
     train_loader = torch.utils.data.DataLoader(train_subset,num_workers=args.workers, batch_size=args.batch,pin_memory=True, shuffle= True)
     val_loader = torch.utils.data.DataLoader(valid_subset,num_workers=args.workers, batch_size=args.batch)
@@ -117,6 +117,13 @@ def Trainer(args, train_subset, valid_subset ):
 
     #scheduler = CosineAnnealingLR(optimizer, len(train_loader))
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=2, eta_min=0.000005)
+
+    if args.resume:
+        print("Resuming from the checkpoint")
+        ckp = torch.load(args.ckp)
+        model.load_state_dict(ckp)
+
+
     # Train and evaluate the model
     if args.multitask or args.gaze_cbm or args.ego_cbm or args.combined_bottleneck:
         acc,f1,acc_gaze,f1_gaze,acc_ego,f1_ego,f1_ego_micro,f1_ego_macro = train(args, train_loader, val_loader, model,scheduler, criterion1, criterion2, criterion3, optimizer, device,writer)
@@ -164,6 +171,9 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
     accumulation_steps = args.accumulation
     os.makedirs(save_dir, exist_ok=True)  # Create the directory if it doesn't exist
     best_model_path = os.path.join(save_dir, f"best_{args.model}_{args.dataset}.pth") 
+
+    process = psutil.Process()
+
     print("Started Training")
     for epoch in range(num_epochs):
         model.train()
@@ -271,13 +281,15 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
 
             del images, outputs, label
             torch.cuda.empty_cache()
+            #import pdb;pdb.set_trace()
+            memory_usage = process.memory_info().rss / (1024 ** 2)
 
         scheduler.step()
 
 
         epoch_loss = train_loss/len(train_dataloader)
 
-        print(f"epoch {epoch} Loss: {epoch_loss:.4f}")
+        print(f"epoch {epoch} Loss: {epoch_loss:.4f}, memory {memory_usage} MB")
 
         train_losses.append(epoch_loss)
 
@@ -485,10 +497,13 @@ def train(args, train_dataloader, valid_dataloader, model,scheduler, criterion1,
                 best_val_f1 = f1_val
 
                 counter = 0  
-                if args.distributed:
-                    torch.save(model.module.state_dict(),best_model_path)
-                else:
-                    torch.save(model.state_dict(),best_model_path)
+
+                checkpoint_final = {
+                    'epoch': epoch,  
+                    'model_state_dict': model.module.state_dict() if args.distributed else model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }
+                torch.save(checkpoint_final,best_model_path)
                 patience_counter=0
                 print("best model is saved ")  
                 print("patience is set to zero") 
@@ -546,6 +561,8 @@ if __name__ == '__main__':
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
     parser.add_argument("-multitask", action="store_true", help="Enable multitask mode")
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
+    parser.add_argument("-resume", action="store_true",help="auto resume from a checkpoint" )
+    parser.add_argument("--ckp",type= str, default = None)
     args = parser.parse_args()
 
     home_dir = str(args.directory)
