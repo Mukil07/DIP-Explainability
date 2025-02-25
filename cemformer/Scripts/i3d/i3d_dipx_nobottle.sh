@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/i3d_nobottle_new.txt
-#SBATCH --nodelist=gnode102
+#SBATCH --output=output_DIPX/i3d_nobottle_base1.txt
+#SBATCH --nodelist=gnode094
 #SBATCH --partition=ihub
 
 
@@ -17,8 +17,8 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=i3d_nobottle
-MODEL=cbm
+TECH=i3d_nobottle_base1
+MODEL=i3d_fine
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir

@@ -51,6 +51,10 @@ def Trainer(args, train_subset, valid_subset ):
     #del ckp['pos_embed']
     model.first_model.load_state_dict(ckp,strict=False)
 
+    if args.ego_cbm:
+        for param in model.third_model.parameters():
+            param.requires_grad = False
+
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
     val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
 
@@ -166,9 +170,9 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
             
             elif args.ego_cbm:
                     
-                loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+               # loss3 = lam2*criterion3(outputs[1],gaze.cuda())
                 loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
-                loss = loss1 + loss2 + loss3
+                loss = loss1 + loss2 #+ loss3
             
             elif args.combined_bottleneck:
                
@@ -286,9 +290,9 @@ def train(args, train_dataloader, valid_dataloader, model, criterion1, criterion
 
                     elif args.ego_cbm:
                             
-                        loss3 = lam2*criterion3(outputs[1],gaze.cuda())
+                        #loss3 = lam2*criterion3(outputs[1],gaze.cuda())
                         loss2 = lam1*criterion2(torch.hstack(outputs[2:]),torch.vstack(ego).to(dtype=torch.float).permute((1,0)).to(device))
-                        loss = loss1 + loss2 + loss3
+                        loss = loss1 + loss2 #+ loss3
                         predicted_gaze = torch.argmax(outputs[1],dim=1)
                         all_preds_gaze.append(predicted_gaze.cpu())
                         all_labels_gaze.append(gaze.cpu())    

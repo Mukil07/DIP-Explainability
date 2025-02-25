@@ -10,7 +10,7 @@ from model.mae.mae_fine import Multi_Mae_fine
 #from model.cbm import ModelXtoCtoY
 from model.i3d.cbm import ModelXtoCtoY
 from model.i3d.i3d_lstm import ModelXtoCtoY_lstm 
-
+from model.i3d.i3d_fine import ModelXtoCtoY_fine
 def build_model(args):
 
     if args.model == 'vit':
@@ -34,7 +34,11 @@ def build_model(args):
 
         return ModelXtoCtoY(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
                  args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
+    
+    elif args.model == 'i3d_fine':
 
+        return ModelXtoCtoY_fine(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
 
     elif args.model == 'i3d_lstm':
 
