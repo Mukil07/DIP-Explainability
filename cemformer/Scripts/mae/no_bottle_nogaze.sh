@@ -4,7 +4,7 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/fine_nobottle.txt
+#SBATCH --output=output_DIPX/fine_nobottle_2.txt
 #SBATCH --nodelist=gnode121
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4
@@ -17,15 +17,15 @@ module load u18/cuda/11.7
 
 cd /scratch/mukil/cemformer
 
-TECH=nobottle
+TECH=nobottle_2
 MODEL=multimae_fine
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir
 runs=runs_${MODEL}_${DATASET}_${TECH}
 
-rm -rf $best
-rm -rf $runs
+# rm -rf $best
+# rm -rf $runs
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
 python Videomae/mae_dipx.py --model $MODEL --batch 6 --num_classes 7 --dataset $DATASET  \
-    --technique $TECH  --learning_rate 0.00005 --n_attributes 0 
+    --technique $TECH  --learning_rate 0.00005 --n_attributes 0 --ckp /scratch/mukil/cemformer/best_multimae_fine_dipx_nobottle_dir/best_multimae_fine_dipx.pth -resume

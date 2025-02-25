@@ -121,7 +121,8 @@ def Trainer(args, train_subset, valid_subset ):
     if args.resume:
         print("Resuming from the checkpoint")
         ckp = torch.load(args.ckp)
-        model.load_state_dict(ckp)
+        model.load_state_dict(ckp['model_state_dict'])
+        optimizer.load_state_dict(ckp['optimizer_state_dict'])
 
 
     # Train and evaluate the model
