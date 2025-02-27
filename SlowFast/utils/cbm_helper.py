@@ -135,7 +135,7 @@ class add_fc(nn.Module):
             out.append(x)
             return out
         for fc in self.all_fc:
-            out.append(fc(x))
+            out.append(fc(x).mean(1)) #for fine model 
         
         if self.n_attributes > 0 and not self.bottleneck and self.cy_fc is not None:
             attr_preds = torch.cat(out[1:], dim=1)

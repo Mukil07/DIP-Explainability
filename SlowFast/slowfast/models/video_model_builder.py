@@ -851,6 +851,7 @@ class MViT(nn.Module):
         mode = cfg.MVIT.MODE
         self.cls_embed_on = cfg.MVIT.CLS_EMBED_ON
         self.use_mean_pooling = cfg.MVIT.USE_MEAN_POOLING
+        self.new_baseline = cfg.MVIT.LATE_AVG
         # Params for positional embedding
         self.use_abs_pos = cfg.MVIT.USE_ABS_POS
         self.use_fixed_sincos_pos = cfg.MVIT.USE_FIXED_SINCOS_POS
@@ -1231,7 +1232,11 @@ class MViT(nn.Module):
                 x = self.head([x], bboxes)
 
             else:
-                if self.use_mean_pooling:
+                if self.new_baseline:
+
+                    x = x[:, 1:]
+
+                elif self.use_mean_pooling:
                     if self.cls_embed_on:
                         x = x[:, 1:]
                     x = x.mean(1)
@@ -1239,6 +1244,7 @@ class MViT(nn.Module):
                 elif self.cls_embed_on:
                     x = self.norm(x)
                     x = x[:, 0]
+                
                 else:  # this is default, [norm->mean]
                     x = self.norm(x)
                     x = x.mean(1)
@@ -1247,6 +1253,30 @@ class MViT(nn.Module):
 
         return x
 
+
+# @MODEL_REGISTRY.register()
+# class MViT_cbm(MViT):
+
+#     def __init__(self,cfg):
+#         super(MViT_cbm,self).__init__(cfg)
+
+
+#         self.cfg = cfg
+        
+#         self.model1 = MViT(cfg=self.cfg)
+#         self.model2 = MViT(cfg=self.cfg)
+
+#     def forward(self, img1,img2):
+
+#        # import pdb;pdb.set_trace()
+#         _ = self.model1(img1)
+#         _ = self.model2(img2)
+#         feat1 = self.model1.feat
+#         feat2 = self.model2.feat 
+
+#         feat = torch.cat((feat1,feat2),dim=-1)
+
+#         return feat 
 
 @MODEL_REGISTRY.register()
 class MViT_cbm(MViT):
@@ -1271,7 +1301,7 @@ class MViT_cbm(MViT):
         feat = torch.cat((feat1,feat2),dim=-1)
 
         return feat 
-    
+
 @MODEL_REGISTRY.register()
 class MViT_Adapter(nn.Module):
 

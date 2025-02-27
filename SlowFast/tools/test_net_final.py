@@ -282,8 +282,8 @@ def train(cfg):
     start_epoch = 0
 
 
-    train_csv = "/scratch/mukil/dipx/train.csv"
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    train_csv = "/scratch/mukilv2/dipx/train.csv"
+    val_csv = "/scratch/mukilv2/dipx/val.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     #transform= None
     train_subset = CustomDataset(train_csv, transform =transform )

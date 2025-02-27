@@ -456,6 +456,8 @@ _C.MVIT.POOL_FIRST = False
 # If True, use cls embed in the network, otherwise don't use cls_embed in transformer.
 _C.MVIT.CLS_EMBED_ON = True
 
+_C.MVIT.LATE_AVG = False 
+
 # Kernel size for patchtification.
 _C.MVIT.PATCH_KERNEL = [3, 7, 7]
 
