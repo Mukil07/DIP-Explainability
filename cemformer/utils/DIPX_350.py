@@ -113,14 +113,14 @@ class CustomDataset(Dataset):
 
 
         self.resize_transform = transforms.Resize((224, 224))
-        self.road_path = '/scratch/mukil/dipx/common/front_view_common'
-        self.face_path = '/scratch/mukil/gaze_crop_350'
-        self.time = '/scratch/mukil/dipx/time.csv'
+        self.road_path = '/scratch/mukilv2/dipx/common/front_view_common'
+        self.face_path = '/scratch/mukilv2/gaze_crop_350'
+        self.time = '/scratch/mukilv2/dipx/time.csv'
         self.df = pd.read_csv(self.time)
 
         if self.debug:
             
-            self.csv_path = f'/scratch/mukil/dipx/train_{self.debug}.csv'
+            self.csv_path = f'/scratch/mukilv2/dipx/train_{self.debug}.csv'
         else:
             self.csv_path = csv_type
 

@@ -3,7 +3,7 @@ from model.i3d.i3d_multi import InceptionI3d
 import scipy.stats as stats
 import torch 
 import torch.nn as nn 
-
+from model.TM import token_merging
 class CBM(InceptionI3d):
 
     def __init__(self, num_classes=5, n_attributes=17, bottleneck=True, expand_dim=512, connect_CY=False, dropout_keep_prob=0.45):
@@ -13,7 +13,9 @@ class CBM(InceptionI3d):
         self.n_attributes = n_attributes
         self.all_fc = nn.ModuleList()
         self.feat = None
-       
+        ori_shape = (8,7,7,2,2048)
+        self.tm = token_merging(ori_shape)
+
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
         else:
@@ -57,6 +59,7 @@ class CBM(InceptionI3d):
 
         
         x = torch.cat((x1,x2),dim=1)   
+        ori_shape = x.shape 
         self.feat = self.avg_pool(x).flatten(1)
         out = []
         if self.n_attributes ==0:
@@ -66,6 +69,7 @@ class CBM(InceptionI3d):
            
         x = self.dropout(x.flatten(2)).permute((0,2,1)) # [8,98,2058]
         
+        x =  self.tm(x)    
 
         #x= x.permute((0,2,3,4,1))
 

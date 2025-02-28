@@ -127,11 +127,12 @@ class add_fc(nn.Module):
 
     def forward(self,img1,img2):
 
-        x = self.model(img1,img2)
-        self.feat = x
+        x = self.model(img1,img2) # (B,392,1536)
+        self.feat = x   
         out = []
         #x= x.permute((0,2,3,4,1))
         if self.n_attributes == 0:
+            x = x.mean(dim=1)
             out.append(x)
             return out
         for fc in self.all_fc:

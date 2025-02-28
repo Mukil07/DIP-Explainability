@@ -44,7 +44,7 @@ def Trainer(args, train_subset, valid_subset ):
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukil/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
+    ckp = torch.load('/scratch/mukilv2/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
     # ckp = torch.load(checkpoint,map_location=device)
     del ckp['logits.conv3d.bias']
     del ckp['logits.conv3d.weight']
@@ -55,8 +55,8 @@ def Trainer(args, train_subset, valid_subset ):
         for param in model.third_model.parameters():
             param.requires_grad = False
 
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch)
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True, shuffle= True,drop_last=True)
+    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,drop_last=True)
 
     # weights = [4, 2, 4, 2, 1]
     # class_weights = torch.FloatTensor(weights).cuda()
@@ -491,11 +491,11 @@ if __name__ == '__main__':
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukil")
+    cache_dir = os.path.join(home_dir, "mukilv2")
     world_size = torch.cuda.device_count()
 
-    train_csv = "/scratch/mukil/dipx/train.csv"
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    train_csv = "/scratch/mukilv2/dipx/train.csv"
+    val_csv = "/scratch/mukilv2/dipx/val.csv"
 
     # transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 

@@ -170,7 +170,9 @@ def train_epoch(
                 loss = partial_loss
             else:
                 # Compute the loss.
+                
                 loss = loss_fun(preds[0], labels)
+                
                 if cfg.CBM.GAZE_CBM:
           
                     loss3 = lam2*criterion3(preds[1],torch.vstack(ego).to(dtype=torch.float).permute((1,0)).cuda(non_blocking=True))
