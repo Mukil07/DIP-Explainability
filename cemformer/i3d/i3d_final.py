@@ -483,7 +483,7 @@ if __name__ == '__main__':
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
     parser.add_argument("--dropout", type = float, default= 0.0)
     parser.add_argument("--num_epochs", default=100, type=int)
-    
+    parser.add_argument("--clusters",default=5,type=int)
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")

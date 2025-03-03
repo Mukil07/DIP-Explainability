@@ -22,7 +22,7 @@ from slowfast.models.utils import (
     validate_checkpoint_wrapper_import,
 )
 from torch.nn.init import trunc_normal_
-
+from utils.TM import token_merging
 from . import head_helper, operators, resnet_helper, stem_helper  # noqa
 from .build import MODEL_REGISTRY
 
@@ -851,7 +851,12 @@ class MViT(nn.Module):
         mode = cfg.MVIT.MODE
         self.cls_embed_on = cfg.MVIT.CLS_EMBED_ON
         self.use_mean_pooling = cfg.MVIT.USE_MEAN_POOLING
+
+        #Proposed technique
+        ori_shape=(8,1568,1536)
+        self.tm = token_merging(ori_shape,cfg.CBM.CLUSTER)
         self.new_baseline = cfg.MVIT.LATE_AVG
+        self.new_baseline2 = cfg.MVIT.PROPOSED
         # Params for positional embedding
         self.use_abs_pos = cfg.MVIT.USE_ABS_POS
         self.use_fixed_sincos_pos = cfg.MVIT.USE_FIXED_SINCOS_POS
@@ -1299,6 +1304,7 @@ class MViT_cbm(MViT):
         feat2 = self.model2.feat 
 
         feat = torch.cat((feat1,feat2),dim=-1)
+        feat =  self.tm(feat) 
 
         return feat 
 
@@ -1317,6 +1323,7 @@ class MViT_Adapter(nn.Module):
         use_relu = cfg.CBM.RELU
         use_sigmoid = cfg.CBM.USE_SIG
         connect_CY = cfg.CBM.CONNECT_CY
+        cluster = cfg.CBM.CLUSTER
         #import pdb;pdb.set_trace()
         self.base_model = MViT_cbm(cfg)
         self.first_model = add_fc(self.base_model,embed_dim,num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,

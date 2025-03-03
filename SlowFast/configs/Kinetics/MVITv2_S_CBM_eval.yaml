@@ -96,6 +96,7 @@ CBM:
   MULTITASK: False
   N_ATTR: 0
   BOTTLENECK: False
+  CLUSTER: 5
   EXP_DIM: 0
   RELU: False
   USE_SIG: False

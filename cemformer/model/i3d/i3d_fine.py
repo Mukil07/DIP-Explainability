@@ -6,7 +6,7 @@ import torch.nn as nn
 from model.TM import token_merging
 class CBM(InceptionI3d):
 
-    def __init__(self, num_classes=5, n_attributes=17, bottleneck=True, expand_dim=512, connect_CY=False, dropout_keep_prob=0.45):
+    def __init__(self, num_classes=5, n_attributes=17, bottleneck=True, expand_dim=512, connect_CY=False, dropout_keep_prob=0.45, clusters=5):
 
         super(CBM, self).__init__(num_classes=num_classes, dropout_keep_prob=dropout_keep_prob)
         self.bottleneck = bottleneck
@@ -14,7 +14,7 @@ class CBM(InceptionI3d):
         self.all_fc = nn.ModuleList()
         self.feat = None
         ori_shape = (8,7,7,2,2048)
-        self.tm = token_merging(ori_shape)
+        self.tm = token_merging(ori_shape,clusters)
 
         if connect_CY:
             self.cy_fc = FC(n_attributes, num_classes, expand_dim)
@@ -111,10 +111,10 @@ class FC(nn.Module):
 
 
 def ModelXtoCtoY_fine(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
-                 use_relu, use_sigmoid,connect_CY, dropout):
+                 use_relu, use_sigmoid,connect_CY, dropout, clusters):
 
     model1 = CBM(num_classes=num_classes,n_attributes=n_attributes,
-                  bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY, dropout_keep_prob = dropout)
+                  bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY, dropout_keep_prob = dropout, clusters=clusters)
 
     model2 = MLP(input_dim=n_attributes, num_classes=num_classes, expand_dim=expand_dim)
 

@@ -19,7 +19,7 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
     model.to(device)
     #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukil/cemformer/best_i3d_fine_dipx_i3d_ego_base1_dir/best_i3d_fine_dipx.pth',map_location=device)
+    ckp = torch.load('/scratch/mukilv2/cemformer/best_i3d_fine_dipx_i3d_ego_proposed_dir_BEST/best_i3d_fine_dipx.pth',map_location=device)
 
     model.load_state_dict(ckp,strict=False)
     model.eval()
@@ -105,9 +105,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukil")
-    train_csv = "/scratch/mukil/dipx/train.csv"
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    cache_dir = os.path.join(home_dir, "mukilv2")
+    train_csv = "/scratch/mukilv2/dipx/train.csv"
+    val_csv = "/scratch/mukilv2/dipx/val.csv"
     train_subset = CustomDataset(train_csv, debug = args.debug)
     val_subset = CustomDataset(val_csv, debug=args.debug)
 

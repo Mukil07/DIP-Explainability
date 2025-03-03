@@ -13,9 +13,8 @@ class token_merging(nn.Module):
         self.beta  = nn.Parameter(torch.tensor(1.0))
         self.gamma = nn.Parameter(torch.tensor(1.0))
         self.Smax = ori_shape[1]
-        self.Tmax = ori_shape[3]
+        #self.Tmax = ori_shape[3]
         K=clusters
-        dim = 2048
         self.centers = torch.nn.Parameter(torch.randn(ori_shape[0], K, ori_shape[-1]))
 
     def ordering(self,tokens):

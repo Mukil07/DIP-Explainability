@@ -97,6 +97,7 @@ CBM:
   N_ATTR: 0
   BOTTLENECK: False
   EXP_DIM: 0
+  CLUSTER: 5
   RELU: False
   USE_SIG: False
   CONNECT_CY: False

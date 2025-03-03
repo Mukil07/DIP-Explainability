@@ -38,7 +38,7 @@ def build_model(args):
     elif args.model == 'i3d_fine':
 
         return ModelXtoCtoY_fine(args.num_classes, args.multitask_classes, args.multitask, args.n_attributes, args.bottleneck, args.expand_dim,
-                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout)  
+                 args.use_relu, args.use_sigmoid, args.connect_CY, args.dropout, args.clusters)  
 
     # elif args.model == 'i3d_lstm':
 

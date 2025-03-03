@@ -457,7 +457,7 @@ _C.MVIT.POOL_FIRST = False
 _C.MVIT.CLS_EMBED_ON = True
 
 _C.MVIT.LATE_AVG = False 
-
+_C.MVIT.PROPOSED = False 
 # Kernel size for patchtification.
 _C.MVIT.PATCH_KERNEL = [3, 7, 7]
 

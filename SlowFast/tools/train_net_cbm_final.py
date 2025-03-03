@@ -667,8 +667,8 @@ def train(cfg):
     train_subset = CustomDataset(train_csv, transform =transform )
     val_subset = CustomDataset(val_csv,transform =transform)
 
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=(cfg.TRAIN.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS,pin_memory=True, shuffle= True)
-    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=(cfg.TEST.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS)
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=(cfg.TRAIN.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS,pin_memory=True, shuffle= True,drop_last=True)
+    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=(cfg.TEST.BATCH_SIZE//max(1,cfg.NUM_GPUS)),num_workers=cfg.DATA_LOADER.NUM_WORKERS,drop_last=True)
 
 
     # Create meters.
