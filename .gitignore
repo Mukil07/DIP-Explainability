@@ -9,3 +9,9 @@
 *RUNS
 *.pyc
 __pycache__/
+
+egonogaze/
+nobottlenogaze/
+egoproposed/
+egoproposed_5/
+egoproposed_10/
