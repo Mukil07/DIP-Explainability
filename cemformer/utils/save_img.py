@@ -7,21 +7,25 @@ def normalize(img):
     im = ((img - img.min()) / (img.max() - img.min())).permute((1, 2, 0)) * 255
     return im
 
-def visualize(frames, num, video_name="./visualize_camvid/output_video.avi", fps=5):
-    save_dir = 'visualize_cam'
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    save_dirvid = f'visualize_camvid'
+def visualize(frames, num, label, video_name="./visualize_camvid/output_video.avi", fps=5):
+
+    save_dir = f'visualize_cam'
+    save_dirvid = f'visualize_camvid_{label}'
     if not os.path.exists(save_dirvid):
         os.mkdir(save_dirvid)
     # Save frames as images
-    video_name = f"./visualize_camvid/vid{num}.avi"
-    for i, img in enumerate(frames):
-        img = normalize(img)
-        img = img.cpu().numpy().astype(np.uint8)
-        img = Image.fromarray(img)
-        save = os.path.join(save_dir, f'img_{i}.jpg')
-        img.save(save)
+    video_name = f"./visualize_camvid_{label}/vid{num}.avi"
+    #import pdb;pdb.set_trace()
+    for i,img in enumerate(frames):
+        
+        # if not os.path.exists(save_dir):
+        #     os.mkdir(save_dir)
+        # for i, img in enumerate(batch):
+            img = normalize(img)
+            img = img.cpu().numpy().astype(np.uint8)
+            img = Image.fromarray(img)
+            save = os.path.join(save_dir, f'img_{i}.jpg')
+            img.save(save)
 
     # Gather all image files and sort numerically by the index
     def extract_index(filename):

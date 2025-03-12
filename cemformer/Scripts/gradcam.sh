@@ -4,7 +4,7 @@
 #SBATCH -c 14
 #SBATCH --gres=gpu:1
 #SBATCH --time=4-00:00:00
-#SBATCH --output=output_DIPX/ego_proposed.txt
+#SBATCH --output=output_DIPX/ego_proposed_gradacam.txt
 #SBATCH --nodelist=gnode122
 #SBATCH --partition=lovelace
 #SBATCH --qos=kl4
@@ -14,9 +14,9 @@
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukilv2/cemformer
+cd /scratch/mukilv2/cemformer`
 
-TECH=i3d_ego_proposed_gradacams
+TECH=i3d_ego_proposed_gradacams_new
 MODEL=i3d_fine
 DATASET=dipx
 

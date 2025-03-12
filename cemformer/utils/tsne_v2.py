@@ -34,8 +34,8 @@ class plot_tsne():
         # Create masks for non-black and black points.
         # Here we assume that the black class is represented by the integer 7.
         
-        mask_non_black = labels_np != 7
-        mask_black = labels_np == 7
+        mask_non_black = labels_np != 8
+        mask_black = labels_np == 8
 
         # Plot the non-black points all at once using scatter.
         non_black_points = reduced_features[mask_non_black]
@@ -51,7 +51,7 @@ class plot_tsne():
         # For the black points, use a list of unique markers.
         # You can choose as many markers as needed. Here is an example list.
         unique_markers = ['X', 's', '^', 'v', '<', '>', '1', '2', '3', '4',
-                          'p', '*', 'h', 'H', 'D', 'd', 'P','o' , '8']
+                          'p', '*', 'h', 'H', 'D', 'd', 'P', '8','o' ]
         black_points = reduced_features[mask_black]
 
         # Check that you have enough unique markers

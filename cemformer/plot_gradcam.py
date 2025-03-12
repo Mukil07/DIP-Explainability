@@ -19,15 +19,15 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
     model.to(device)
     #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/best_i3d_fine_dipx_i3d_ego_proposed_dir_BEST/best_i3d_fine_dipx.pth',map_location=device)
-
-    model.load_state_dict(ckp,strict=False)
+    ckp = torch.load('/scratch/mukilv2/cemformer/weights/best_cbm_dipx.pth',map_location=device)
+    import pdb;pdb.set_trace()
+    model.load_state_dict(ckp,strict=True)
     model.eval()
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params}")
 
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=args.batch,pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=args.batch,pin_memory=True)
+    val_loader = torch.utils.data.DataLoader(valid_subset, batch_size=args.batch,pin_memory=True)
 
     for param in model.parameters():
         param.requires_grad = True
@@ -56,7 +56,7 @@ def val( valid_dataloader, model, device):
             img1=img1.type(torch.cuda.FloatTensor)
             img2=img2.type(torch.cuda.FloatTensor)
             outputs = model(img1,img2) 
-
+            #import pdb;pdb.set_trace()
             #with torch.enable_grad():
             #import pdb;pdb.set_trace()
             print(torch.argmax(outputs[0]),label)
@@ -67,10 +67,14 @@ def val( valid_dataloader, model, device):
             #tar = ["first_model/MaxPool3d_5a_2x2_2", "first_model/MaxPool3d_5a_2x2_2"]
             #tar = ["first_model/Mixed_5c","first_model/Mixed_5c_2"]
             grad = GradCAM(model,tar,[0,0,0],[1,1,1])
-            #import pdb;pdb.set_trace()
+            
             img,_ = grad([img1,img2],label)
-            visualize(img[1].squeeze(0),i) #for face image
+            visualize(img[1].squeeze(0),i,"ego3") #for face image
+            visualize(img[0].squeeze(0),i,"aria3")
+            
 
+            if i ==50:
+                exit()
 if __name__ == '__main__':
     seed = 37
 
@@ -96,7 +100,7 @@ if __name__ == '__main__':
     parser.add_argument("--use_sigmoid", type = bool, default= False)
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
     parser.add_argument("--dropout", type = float, default= 0.45)
-    
+    parser.add_argument("--clusters",default=5,type=int)
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")

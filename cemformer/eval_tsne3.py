@@ -14,9 +14,9 @@ from captum.attr import Occlusion,IntegratedGradients
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, CosineAnnealingWarmRestarts
 from torch.utils.tensorboard import SummaryWriter
-import pickle
-from sklearn.metrics import accuracy_score, f1_score
 
+from sklearn.metrics import accuracy_score, f1_score
+import pickle
 
 
 from utils.tsne_v2 import plot_tsne as TSNE
@@ -54,7 +54,7 @@ def Eval(args, valid_subset ):
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/weights/best_i3d_fine_dipx.pth',map_location=device)
+    ckp = torch.load('/scratch/mukilv2/cemformer/weights/best_cbm_dipx.pth',map_location=device)
                
     model.load_state_dict(ckp,strict=False)
 
@@ -122,20 +122,23 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
             
             for i, (img1,img2,cls,gaze,ego) in tqdm(enumerate(valid_dataloader)): 
                 
-                if ego[index] == 1:
+                
                     
                 
-                    img1 = img1.to(device)
-                    img2 = img2.to(device)
+                img1 = img1.to(device)
+                img2 = img2.to(device)
 
-                    label = cls.to(device)
+                label = cls.to(device)
 
-                    # Forward pass
+                # Forward pass
 
-                    img1=img1.type(torch.cuda.FloatTensor)
-                    img2=img2.type(torch.cuda.FloatTensor)
-                    outputs = model(img1,img2) 
-                    
+                img1=img1.type(torch.cuda.FloatTensor)
+                img2=img2.type(torch.cuda.FloatTensor)
+                outputs = model(img1,img2) 
+                pred_ego =  (torch.sigmoid(torch.stack(outputs[2:]).squeeze()) > 0.2).float().cpu()
+                
+                #import pdb;pdb.set_trace()
+                if pred_ego[index] == 1:
                     feat = model.first_model.feat
                 
                     if args.grad_cam:
@@ -215,7 +218,7 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
                     del img2 
                     del label
                     del outputs
-            
+                
         if len(FEAT) != 0:
             anchor_FEAT.append(torch.vstack(FEAT).mean(dim=0).unsqueeze(0))
             anchor_LABEL.append(torch.tensor(8))
@@ -324,13 +327,14 @@ def evaluate(args, valid_dataloader, model, criterion1, criterion2, criterion3, 
 
     final_FEAT = FEAT + anchor_FEAT
     LABEL = LABEL + anchor_LABEL
+
+    with open("data_baseline.pkl", "wb") as f:
+        pickle.dump({"embeddings": final_FEAT, "labels": LABEL}, f)
+
     tsne = TSNE()
     tsne_img = tsne.plot(final_FEAT,LABEL,args.dataset)
 
-    with open("data_proposed_nonpred.pkl", "wb") as f:
-        pickle.dump({"embeddings": final_FEAT, "labels": LABEL}, f)
-
-    plt.savefig('tsne_all.png')
+    plt.savefig('tsne_all_pred_baseline_2.png')
     
     all_labels = np.hstack(all_labels)
     all_preds = np.hstack(all_preds)

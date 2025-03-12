@@ -110,13 +110,8 @@ class FC(nn.Module):
         return x
 
 
-<<<<<<< HEAD:cemformer/model/i3d/i3d_fine.py
-def ModelXtoCtoY_fine(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
-                 use_relu, use_sigmoid,connect_CY, dropout, clusters):
-=======
 def ModelXtoCtoY_proposed(num_classes, multitask_classes, multitask, n_attributes, bottleneck, expand_dim,
-                 use_relu, use_sigmoid,connect_CY, dropout):
->>>>>>> 084f6324b52c0af4653836a1632cceda822e24d5:cemformer/model/i3d/i3d_proposed.py
+                 use_relu, use_sigmoid,connect_CY, dropout, clusters):
 
     model1 = CBM(num_classes=num_classes,n_attributes=n_attributes,
                   bottleneck=bottleneck, expand_dim=expand_dim,connect_CY=connect_CY, dropout_keep_prob = dropout, clusters=clusters)
