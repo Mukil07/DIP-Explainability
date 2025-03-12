@@ -114,7 +114,7 @@ def run_visualization(vis_loader, model, cfg, writer=None):
                 activations, preds = model_vis.get_activations([images[0],images[1]])
             if cfg.TENSORBOARD.MODEL_VIS.GRAD_CAM.ENABLE:
                 if cfg.TENSORBOARD.MODEL_VIS.GRAD_CAM.USE_TRUE_LABEL:
-                    inputs, preds = gradcam(inputs, labels=labels)
+                    inputs, preds = gradcam([images[0],images[1]], labels=labels)
                     
                 else:
                     inputs, preds = gradcam([images[0],images[1]])

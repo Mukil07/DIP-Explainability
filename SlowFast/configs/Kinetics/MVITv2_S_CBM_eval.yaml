@@ -25,6 +25,7 @@ MVIT:
   DEPTH: 16
   NUM_HEADS: 1
   EMBED_DIM: 96
+  LATE_AVG: True
   PATCH_KERNEL: (3, 7, 7)
   PATCH_STRIDE: (2, 4, 4)
   PATCH_PADDING: (1, 3, 3)
@@ -115,7 +116,7 @@ TENSORBOARD:
     #LAYER_LIST: ['first_model/model/model1/patch_embed/proj','first_model/model/model2/patch_embed/proj']
     GRAD_CAM:
       ENABLE: True
-      USE_TRUE_LABEL: False
+      USE_TRUE_LABEL: True
       LAYER_LIST: ['first_model/model/model1/blocks/15/attn/pool_k','first_model/model/model2/blocks/15/attn/pool_k'] 
       #LAYER_LIST: ['first_model/model/model1/patch_embed/proj','first_model/model/model2/patch_embed/proj']
 NUM_GPUS: 1

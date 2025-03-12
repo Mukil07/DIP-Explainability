@@ -26,9 +26,10 @@ class End2EndModel(torch.nn.Module):
         else:
             attr_outputs = stage1_out
 
+       
         stage2_inputs = attr_outputs
         stage2_inputs = torch.cat(stage2_inputs, dim=1)
-  
+
         if self.n_attributes >0: # for bottleneck 
             if self.multitask:
                 all_out = [self.sec_model(stage2_inputs),self.third_model(stage2_inputs)]

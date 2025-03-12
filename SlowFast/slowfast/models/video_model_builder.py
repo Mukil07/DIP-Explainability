@@ -853,7 +853,7 @@ class MViT(nn.Module):
         self.use_mean_pooling = cfg.MVIT.USE_MEAN_POOLING
 
         #Proposed technique
-        ori_shape=(8,1568,1536)
+        ori_shape=(1,1568,1536)
         self.tm = token_merging(ori_shape,cfg.CBM.CLUSTER)
         self.new_baseline = cfg.MVIT.LATE_AVG
         self.new_baseline2 = cfg.MVIT.PROPOSED
@@ -1304,7 +1304,7 @@ class MViT_cbm(MViT):
         feat2 = self.model2.feat 
 
         feat = torch.cat((feat1,feat2),dim=-1)
-        feat =  self.tm(feat) 
+        #feat =  self.tm(feat) 
 
         return feat 
 

@@ -25,7 +25,8 @@ def main():
         # Perform training.
         if cfg.TRAIN.ENABLE:
             launch_job(cfg=cfg, init_method=args.init_method, func=train)
-
+        
+        exit()
         # Perform multi-clip testing.
         # if cfg.TEST.ENABLE:
         #     if cfg.TEST.NUM_ENSEMBLE_VIEWS == -1:
@@ -38,10 +39,11 @@ def main():
 
         # Perform model visualization
         #import pdb;pdb.set_trace()
-        if cfg.TENSORBOARD.ENABLE and (
-            cfg.TENSORBOARD.MODEL_VIS.ENABLE or cfg.TENSORBOARD.WRONG_PRED_VIS.ENABLE
-        ):
-            launch_job(cfg=cfg, init_method=args.init_method, func=visualize)
+
+        # if cfg.TENSORBOARD.ENABLE and (
+        #     cfg.TENSORBOARD.MODEL_VIS.ENABLE or cfg.TENSORBOARD.WRONG_PRED_VIS.ENABLE
+        # ):
+        #     launch_job(cfg=cfg, init_method=args.init_method, func=visualize)
 
         # Run demo.
         if cfg.DEMO.ENABLE:

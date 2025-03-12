@@ -104,6 +104,7 @@ CBM:
   GAZE_CBM: False
   EGO_CBM: False
   COMB_BOTTLE: False
+
 NUM_GPUS: 1
 NUM_SHARDS: 1
 RNG_SEED: 0

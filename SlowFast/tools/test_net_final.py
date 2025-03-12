@@ -27,7 +27,8 @@ from slowfast.models.contrastive import (
 )
 from slowfast.utils.meters_cbm import AVAMeter, EpochTimer, TrainMeter, ValMeter
 from slowfast.utils.multigrid import MultigridSchedule
-from utils.DIPXv2 import CustomDataset
+#from utils.DIPXv2 import CustomDataset
+from utils.DIPX_random import CustomDataset
 logger = logging.get_logger(__name__)
 
 
@@ -52,7 +53,7 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
     #val_meter.iter_tic()
 
     for cur_iter, batch in enumerate(val_loader):
-        if cur_iter < 3:
+        
             
             batch_size = cfg.TEST.BATCH_SIZE
             *images,cls,gaze,ego = batch
@@ -150,8 +151,7 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                 #import pdb;pdb.set_trace()
             val_meter.log_iter_stats(cur_epoch, cur_iter)
     #val_meter.iter_tic()
-        else:
-            break
+
 
     # Log epoch stats.
     
@@ -286,8 +286,8 @@ def train(cfg):
     val_csv = "/scratch/mukilv2/dipx/val.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     #transform= None
-    train_subset = CustomDataset(train_csv, transform =transform )
-    val_subset = CustomDataset(val_csv,transform =transform)
+    train_subset = CustomDataset(train_csv, rand_load=2, transform =transform )
+    val_subset = CustomDataset(val_csv,rand_load=2, transform =transform)
 
     train_loader = torch.utils.data.DataLoader(train_subset, batch_size=cfg.TRAIN.BATCH_SIZE//max(1,cfg.NUM_GPUS),pin_memory=True, shuffle= True)
     val_loader = torch.utils.data.DataLoader(val_subset, batch_size=cfg.TEST.BATCH_SIZE//max(1,cfg.NUM_GPUS))
