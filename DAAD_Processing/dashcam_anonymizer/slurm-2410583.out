@@ -1,0 +1,10 @@
+==========================================
+SLURM_JOB_ID = 2410583
+SLURM_NODELIST = gnode106
+SLURM_JOB_GPUS = 1
+==========================================
+/var/spool/slurmd/job2410583/slurm_script: line 10: activate: No such file or directory
+Traceback (most recent call last):
+  File "/scratch/mukil/DAAD_Processing/dashcam_anonymizer/blur_videos.py", line 5, in <module>
+    import pybboxes as pbx
+ModuleNotFoundError: No module named 'pybboxes'
