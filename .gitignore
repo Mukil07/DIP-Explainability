@@ -10,11 +10,4 @@
 *.pyc
 __pycache__/
 
-egonogaze/
-nobottlenogaze/
-egoproposed/
-egoproposed_5/
-egoproposed_10/
-mvit_eval_new/
-mvit_eval_new_cammaps/
-weight/
+best.pt
