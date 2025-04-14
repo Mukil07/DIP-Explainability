@@ -16,7 +16,7 @@ For running I3D and DINO models;
 
 ```shell
 git clone https://github.com/Mukil07/DIP-Explainability.git
-cd DIP-Explainability/cemformer
+cd models
 conda env create -f environment.yml
 
 export PYTHONPATH="./:$PYTHONPATH"
