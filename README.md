@@ -1,5 +1,9 @@
 **TOWARDS SAFER AND UNDERSTANDABLE DRIVER INTENTION PREDICITON**
 
+<p align="center">
+  <img src="./llavidal/static/web-teaser.jpg" alt="VCBM Application">
+</p>   
+
 ---
 
 ## Installation :wrench:
