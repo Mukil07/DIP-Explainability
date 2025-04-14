@@ -1,4 +1,4 @@
-**TOWARDS SAFER AND UNDERSTANDABLE DRIVER INTENTION PREDICITON**
+# TOWARDS SAFER AND UNDERSTANDABLE DRIVER INTENTION PREDICITON 
 
 <p align="center">
   <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
