@@ -7,15 +7,17 @@
 ---
 
 ## Installation :wrench:
-Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions:
+
+For running SlowFAST models;
+
+Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
+
+For running I3D and DINO models;
 
 ```shell
-conda create --name=vcbm python=3.10
-conda activate vcbm
-
 git clone https://github.com/Mukil07/DIP-Explainability.git
-cd DIP-Explainability
-pip install -r requirements.txt
+cd DIP-Explainability/cemformer
+conda env create -f environment.yml
 
 export PYTHONPATH="./:$PYTHONPATH"
 ```
