@@ -1,21 +1,23 @@
-**TOWARDS SAFER AND UNDERSTANDABLE DRIVER INTENTION PREDICITON**
+# Towards Safer and Understandable Driver Intention Prediciton 🚗🛡
 
 <p align="center">
-  <img src="./llavidal/static/web-teaser.jpg" alt="VCBM Application">
+  <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
 </p>   
 
 ---
 
 ## Installation :wrench:
-Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions:
+
+For running SlowFAST models;
+
+Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
+
+For running I3D and DINO models;
 
 ```shell
-conda create --name=vcbm python=3.10
-conda activate vcbm
-
 git clone https://github.com/Mukil07/DIP-Explainability.git
-cd DIP-Explainability
-pip install -r requirements.txt
+cd DIP-Explainability/cemformer
+conda env create -f environment.yml
 
 export PYTHONPATH="./:$PYTHONPATH"
 ```
