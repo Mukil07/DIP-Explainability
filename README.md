@@ -1,7 +1,7 @@
 **TOWARDS SAFER AND UNDERSTANDABLE DRIVER INTENTION PREDICITON**
 
 <p align="center">
-  <img src="./llavidal/static/web-teaser.jpg" alt="VCBM Application">
+  <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
 </p>   
 
 ---
