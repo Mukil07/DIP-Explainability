@@ -194,6 +194,14 @@ class SlowFast(nn.Module):
         self.cfg = cfg
         self.enable_detection = cfg.DETECTION.ENABLE
         self.num_pathways = 2
+
+        #Proposed technique
+        # ori_shape=(1,1568,1536)
+        # self.tm = token_merging(ori_shape,cfg.CBM.CLUSTER)
+        # self.new_baseline = cfg.SLOWFAST.LATE_AVG
+        # self.new_baseline2 = cfg.SLOWFAST.PROPOSED
+
+
         self._construct_network(cfg)
         init_helper.init_weights(
             self,
@@ -631,11 +639,12 @@ class ResNet(nn.Module):
                     if cfg.MULTIGRID.SHORT_CYCLE
                     or cfg.MODEL.MODEL_NAME == "ContrastiveModel"
                     else [
-                        [
-                            cfg.DATA.NUM_FRAMES // pool_size[0][0],
-                            cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][1],
-                            cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][2],
-                        ]
+                        # [
+                        #     cfg.DATA.NUM_FRAMES // pool_size[0][0],
+                        #     cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][1],
+                        #     cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][2],
+                        # ]
+                        [8,7,7]
                     ]
                 ),  # None for AdaptiveAvgPool3d((1, 1, 1))
                 dropout_rate=cfg.MODEL.DROPOUT_RATE,
@@ -645,7 +654,8 @@ class ResNet(nn.Module):
             )
 
     def forward(self, x, bboxes=None):
-        x = x[:]  # avoid pass by reference
+        
+        #x = x[:]  # avoid pass by reference
         x = self.s1(x)
         x = self.s2(x)
         y = []  # Don't modify x list in place due to activation checkpoint.
@@ -655,6 +665,7 @@ class ResNet(nn.Module):
         x = self.s3(y)
         x = self.s4(x)
         x = self.s5(x)
+        
         if self.enable_detection:
             x = self.head(x, bboxes)
         else:
@@ -857,6 +868,7 @@ class MViT(nn.Module):
         self.tm = token_merging(ori_shape,cfg.CBM.CLUSTER)
         self.new_baseline = cfg.MVIT.LATE_AVG
         self.new_baseline2 = cfg.MVIT.PROPOSED
+
         # Params for positional embedding
         self.use_abs_pos = cfg.MVIT.USE_ABS_POS
         self.use_fixed_sincos_pos = cfg.MVIT.USE_FIXED_SINCOS_POS
@@ -1238,7 +1250,7 @@ class MViT(nn.Module):
 
             else:
                 if self.new_baseline:
-
+                    
                     x = x[:, 1:]
 
                 elif self.use_mean_pooling:
@@ -1294,6 +1306,31 @@ class MViT_cbm(MViT):
         
         self.model1 = MViT(cfg=self.cfg)
         self.model2 = MViT(cfg=self.cfg)
+
+    def forward(self, img1,img2):
+
+       # import pdb;pdb.set_trace()
+        _ = self.model1(img1)
+        _ = self.model2(img2)
+        feat1 = self.model1.feat
+        feat2 = self.model2.feat 
+
+        feat = torch.cat((feat1,feat2),dim=-1)
+        #feat =  self.tm(feat) 
+
+        return feat 
+
+@MODEL_REGISTRY.register()
+class slowfast_cbm(SlowFast):
+
+    def __init__(self,cfg):
+        super(slowfast_cbm,self).__init__(cfg)
+
+
+        self.cfg = cfg
+        
+        self.model1 = SlowFast(cfg=self.cfg)
+        self.model2 = SlowFast(cfg=self.cfg)
 
     def forward(self, img1,img2):
 

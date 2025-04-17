@@ -158,9 +158,9 @@ def train_epoch(
                 preds, labels = model(inputs)
             else:
                 #import pdb;pdb.set_trace()
-                preds = model(inputs[0],inputs[1])
+                preds = model([inputs[1]])#,inputs[1]) # CHANGE IT !!!!
                 
-               #print(preds[0])
+               #print(preds)
             if cfg.TASK == "ssl" and cfg.MODEL.MODEL_NAME == "ContrastiveModel":
                 labels = torch.zeros(
                     preds.size(0), dtype=labels.dtype, device=labels.device
@@ -171,7 +171,7 @@ def train_epoch(
             else:
                 # Compute the loss.
                 
-                loss = loss_fun(preds[0], labels)
+                loss = loss_fun(preds, labels) # for two ego prediciton preds is to be used for action class 
                 
                 if cfg.CBM.GAZE_CBM:
           
@@ -283,9 +283,9 @@ def train_epoch(
                     loss_extra = [one_loss.item() for one_loss in loss_extra]
             else:
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds[0], labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5)) # changed to preds
                 top1_err, top5_err = [
-                    (1.0 - x / preds[0].size(0)) * 100.0 for x in num_topks_correct
+                    (1.0 - x / preds.size(0)) * 100.0 for x in num_topks_correct # changed to preds
                 ]
                 # Gather all the predictions across all the devices.
                 if cfg.NUM_GPUS > 1:
@@ -433,7 +433,8 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                 preds = torch.sum(probs, 1)
             else:
                 #inputs = images[0].unsqueeze(0)
-                preds = model(images[0],images[1])
+                #preds = model(images[0],images[1])
+                preds = model([images[0]]) # for c3d and x3d models
 
             if cfg.DATA.MULTI_LABEL:
                 if cfg.NUM_GPUS > 1:
@@ -442,11 +443,11 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, train_loader, write
                 if cfg.DATA.IN22k_VAL_IN1K != "":
                     preds = preds[:, :1000]
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds[0], labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5)) # changed to preds, earlier preds[0]
 
                 # Combine the errors across the GPUs.
                 top1_err, top5_err = [
-                    (1.0 - x / preds[0].size(0)) * 100.0 for x in num_topks_correct
+                    (1.0 - x / preds.size(0)) * 100.0 for x in num_topks_correct # changed to preds
                 ]
                 if cfg.NUM_GPUS > 1:
                     top1_err, top5_err = du.all_reduce([top1_err, top5_err])
@@ -660,8 +661,8 @@ def train(cfg):
     #     else None
     # )
     #import pdb;pdb.set_trace()
-    train_csv = "/scratch/mukilv2/dipx/train.csv"
-    val_csv = "/scratch/mukilv2/dipx/val.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
     transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     #transform= None
     train_subset = CustomDataset(train_csv, transform =transform )

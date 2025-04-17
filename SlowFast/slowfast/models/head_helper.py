@@ -249,6 +249,7 @@ class ResNetBasicHead(nn.Module):
         self.l2norm_feats = False
 
         for pathway in range(self.num_pathways):
+            
             if pool_size[pathway] is None:
                 avg_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
             else:
