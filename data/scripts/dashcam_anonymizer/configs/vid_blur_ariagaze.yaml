@@ -1,6 +1,6 @@
 model_path: 'model/best.pt'
 #videos_path: '/scratch/partition/'
-videos_path: '/scratch/mukil/dipx/common/aria_common'
+videos_path: '/scratch/mukil/dipx/common/ariagaze_view_common'
 detection_conf_thresh: 0.1
 gpu_avail: True #True
 vid_format: .png #or any other format supported by YOLO
@@ -10,5 +10,6 @@ generate_detections: True #False if the YOLO annotations already present (saves 
 generate_jsons: True
 vid_fps: 60
 blur_radius: 31 #increase to increase blur intensity (odd values)
-output_folder: /scratch/mukil/output/Aria_common/
+output_folder: /scratch/mukil/output/aria_gaze/
+mode: aria_gaze
 #output_folder: /home2/shankar.gangisetty/dip_data/dashcam_anonymizer/bl/

@@ -20,7 +20,7 @@ with open(args.config, 'r') as f:
 
 
 
-#Annotation JSONS stored in annot_jsons folder.
+#Annotation JSONS stored in annot_jsons_{config['mode']} folder.
 
 def blur_regions(image, regions):
     """
@@ -49,7 +49,7 @@ if(config["generate_detections"]):
                 conf=config['detection_conf_thresh'],
                 device='cuda:0',
                 project='/scratch/mukil/new/runs2/detect/',
-                name="yolo_videos_pred") :
+                name=f"yolo_videos_pred_{config['mode']}") :
 
                     pass
     else:
@@ -59,7 +59,7 @@ if(config["generate_detections"]):
                 conf=config['detection_conf_thresh'],
                 device='cpu',
                 project='/scratch/mukil/new/runs2/detect/',
-                name="yolo_videos_pred")
+                name=f"yolo_videos_pred_{config['mode']}")
     
 #import pdb;pdb.set_trace()
 #def sort_videos(item):
@@ -74,7 +74,7 @@ videos = [(item.split("/")[-1].replace(".mp4", "")) for item in videos]
 if(config["generate_jsons"]):
     for video in videos:
         data_dict = {}
-        annot_dir = glob.glob(f'/scratch/mukil/new/runs2/detect/yolo_videos_pred/labels/{video}_*.txt')
+        annot_dir = glob.glob(f"/scratch/mukil/new/runs2/detect/yolo_videos_pred_{config['mode']}/labels/{video}_*.txt")
         #import pdb;pdb.set_trace()
         try:
             for file in annot_dir:
@@ -88,9 +88,9 @@ if(config["generate_jsons"]):
                             if(frame_num not in data_dict.keys()):
                                 data_dict[frame_num] = [line]
                             data_dict[frame_num].append(line)
-            if(not os.path.exists("/scratch/mukil/new/annot_jsons/")):
-                os.mkdir("/scratch/mukil/new/annot_jsons")
-            with open("/scratch/mukil/new/annot_jsons/"+str(video)+".json", 'w') as f:
+            if(not os.path.exists(f"/scratch/mukil/new/annot_jsons_{config['mode']}/")):
+                os.mkdir(f"/scratch/mukil/new/annot_jsons_{config['mode']}")
+            with open(f"/scratch/mukil/new/annot_jsons_{config['mode']}/"+str(video)+".json", 'w') as f:
                 json.dump(data_dict, f)
         except:
             print(f'{video} has no Annotation!')
@@ -104,7 +104,7 @@ anonymized_videos_path = config["output_folder"]
 for video in videos:
     #pdb.set_trace()
     video_number = video.split('/')[-1].replace(".mp4","")
-    json_path = '/scratch/mukil/new/annot_jsons/'+video_number+'.json'
+    json_path = f"/scratch/mukil/new/annot_jsons_{config['mode']}/"+video_number+'.json'
     if(os.path.exists(json_path)):
         with open(json_path) as F:
             #Data is the json dictionary in which key is the frame, and value is a list of lists.
@@ -119,8 +119,8 @@ for video in videos:
             frame_height = int(video_capture.get(4))
             frame_size = (frame_width,frame_height)
             fps = config["vid_fps"]
-            output_video = cv2.VideoWriter(out_vid_path, cv2.VideoWriter_fourcc(*'avc1'), fps, frame_size)
-            #output_video = cv2.VideoWriter(out_vid_path, cv2.VideoWriter_fourcc(*'H264'), fps, frame_size)
+            #output_video = cv2.VideoWriter(out_vid_path, cv2.VideoWriter_fourcc(*'avc1'), fps, frame_size)
+            output_video = cv2.VideoWriter(out_vid_path, cv2.VideoWriter_fourcc(*'H264'), fps, frame_size)
             count = 1
             while True:
                 ret, frame = video_capture.read()

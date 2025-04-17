@@ -1,13 +1,15 @@
 model_path: 'model/best.pt'
-videos_path: '/scratch/cvit/mukil/output/rear_view_all'
+#videos_path: '/scratch/partition/'
+videos_path: '/scratch/mukil/dipx/common/front_view_common'
 detection_conf_thresh: 0.1
 gpu_avail: True #True
 vid_format: .png #or any other format supported by YOLO
-vid_width: 1920
-vid_height: 1080
+vid_width: 446
+vid_height: 256
 generate_detections: True #False if the YOLO annotations already present (saves compute!)
 generate_jsons: True
 vid_fps: 30
 blur_radius: 31 #increase to increase blur intensity (odd values)
-output_folder: /scratch/cvit/mukil/output/rear_view_blurred/
+output_folder: /scratch/mukil/output/front_2/
+mode: front
 #output_folder: /home2/shankar.gangisetty/dip_data/dashcam_anonymizer/bl/

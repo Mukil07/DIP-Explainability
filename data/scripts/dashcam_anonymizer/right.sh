@@ -13,8 +13,6 @@ cd /scratch/mukil/data/scripts/dashcam_anonymizer
 
 export PYTHONPATH=/scratch/mukil/data/scripts/dashcam_anonymizer
 
-python blur_videos.py --config configs/vid_blur.yaml
-
-
+python blur_videos.py --config configs/vid_blur_right.yaml 
 
 
