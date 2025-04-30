@@ -19,14 +19,14 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 
-from utils.tsne_v2 import plot_tsne as TSNE
+from utils.multilabel_tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_2vid import CustomDataset
 from model import build_model
 
 
 def forward_func(*x,model):
-    # return the first element in the tuple
+   
     return model(*x)[0]
 
 
@@ -34,7 +34,7 @@ def forward_func(*x,model):
 def Eval(args, valid_subset ):
 
 
-    log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/dipx"  # Separate log directory for each fold
+    log_dir = f"runs_{args.model}_{args.dataset}_{args.technique}/dipx"  
     writer = SummaryWriter(log_dir)   
 
 

@@ -114,7 +114,7 @@ class CustomDataset(Dataset):
 
         self.resize_transform = transforms.Resize((224, 224))
         self.road_path = '/scratch/mukil/dipx/common/front_view_common'
-        self.face_path = '/scratch/mukil/gaze_folder_50'
+        self.face_path = '/scratch/mukil/dipx/common/ariagaze_view_common'
         self.time = '/scratch/mukil/dipx/time.csv'
         self.df = pd.read_csv(self.time)
 

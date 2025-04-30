@@ -44,7 +44,7 @@ def Trainer(args, train_subset, valid_subset ):
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
+    ckp = torch.load('/scratch/mukil/models/weights/rgb_imagenet_modified.pt',map_location=device)
     # ckp = torch.load(checkpoint,map_location=device)
     del ckp['logits.conv3d.bias']
     del ckp['logits.conv3d.weight']
@@ -483,7 +483,8 @@ if __name__ == '__main__':
     parser.add_argument("--multitask_classes", type = int, default=None) # for final classification along with action classificaiton
     parser.add_argument("--dropout", type = float, default= 0.0)
     parser.add_argument("--num_epochs", default=100, type=int)
-    
+    parser.add_argument("--clusters",default=5,type=int)
+
     parser.add_argument("-bottleneck",  action="store_true", help="Enable bottleneck mode")
     parser.add_argument("-gaze_cbm", action="store_true", help="Enable gaze CBM mode")
     parser.add_argument("-ego_cbm", action="store_true", help="Enable ego CBM mode")
@@ -491,11 +492,11 @@ if __name__ == '__main__':
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukilv2")
+    cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    train_csv = "/scratch/mukilv2/dipx/train.csv"
-    val_csv = "/scratch/mukilv2/dipx/val.csv"
+    train_csv = "/scratch/mukil/dipx/train.csv"
+    val_csv = "/scratch/mukil/dipx/val.csv"
 
     # transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 

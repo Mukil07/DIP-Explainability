@@ -15,7 +15,7 @@
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukil/cemformer
+cd /scratch/mukil/models
 
 TECH=nobottle_2
 MODEL=multimae_fine
@@ -26,6 +26,6 @@ runs=runs_${MODEL}_${DATASET}_${TECH}
 
 # rm -rf $best
 # rm -rf $runs
-export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
-python Videomae/mae_dipx.py --model $MODEL --batch 6 --num_classes 7 --dataset $DATASET  \
-    --technique $TECH  --learning_rate 0.00005 --n_attributes 0 --ckp /scratch/mukil/cemformer/best_multimae_fine_dipx_nobottle_dir/best_multimae_fine_dipx.pth -resume
+export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/models"
+python tools/videomae/mae_dipx.py --model $MODEL --batch 6 --num_classes 7 --dataset $DATASET  \
+    --technique $TECH  --learning_rate 0.00005 --n_attributes 0 --ckp /scratch/mukil/models/best_multimae_fine_dipx_nobottle_dir/best_multimae_fine_dipx.pth -resume

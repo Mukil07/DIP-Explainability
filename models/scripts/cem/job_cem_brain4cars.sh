@@ -13,7 +13,7 @@
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukil/final/cemformer
+cd /scratch/mukil/final/models
 # for debug use this 
 #python main.py --model memvit --debug debug 
 
@@ -24,5 +24,5 @@ cd /scratch/mukil/final/cemformer
 # for no bottleneck setup - set n_attibutes=0
 
 
-python main_brain4cars_cem.py --model memvit --batch 1 --num_classes 5 \
+python tools/cemformer/main_brain4cars_cem.py --model memvit --batch 1 --num_classes 5 \
     --dataset brain4cars --technique reduced_size --n_attributes 0 --dropout 0 --mem_per_layer 4

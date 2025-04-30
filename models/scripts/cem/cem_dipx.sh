@@ -15,7 +15,7 @@
 source activate sf
 module load u18/cuda/11.7
 
-cd /scratch/mukil/cemformer
+cd /scratch/mukil/models
 
 TECH=ego_cem_final_2
 MODEL=memvit_dipx
@@ -29,6 +29,6 @@ rm -rf $runs
 
 # python aria_gaze.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
 #     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
-export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/cemformer"
-python cem/main_dipx_cem.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET      --technique $TECH  --dropout 0.4 --accumulation 4\
+export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/models"
+python tools/cemformer/main_dipx_cem.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET      --technique $TECH  --dropout 0.4 --accumulation 4\
   --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask

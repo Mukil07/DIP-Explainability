@@ -30,5 +30,5 @@ rm -rf $runs
 #     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
 export PYTHONPATH="${PYTHONPATH}:/scratch/mukilv2/cemformer"
 
-python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
+python tools/i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15 --clusters 1 -ego_cbm -multitask -bottleneck 

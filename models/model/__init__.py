@@ -1,7 +1,6 @@
-from model.old_code.vit_dino import vit_base
-# # from model.cem.vit_mem import vit_mem
-# # from model.cem.vit_mem_multi import vit_mem_multi
-# # from model.cem.mem_cbm import vit_mem_dipx
+# from model.cem.vit_mem import vit_mem
+# from model.cem.vit_mem_multi import vit_mem_multi
+# from model.cem.mem_cbm import vit_mem_dipx
 # from model.i3d.i3d import InceptionI3d
 # from model.videomae import vit_base_patch16_224
 # from model.mae.multi_mae import Multi_Mae
