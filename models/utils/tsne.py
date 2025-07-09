@@ -3,7 +3,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
-print("hi")
+
 class plot_tsne():
 
     def __init__(self,perplexity=10,random_state=42,n_comp=2):
@@ -15,7 +15,7 @@ class plot_tsne():
         features_np = torch.vstack(features).detach().cpu().numpy()
         labels = [ten for unit in labels for ten in unit]
         labels = torch.vstack(labels).detach().cpu().numpy()
-        # Apply t-SNE
+        
         if mode == 'dipx':
             custom_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'pink','black']
         else:
