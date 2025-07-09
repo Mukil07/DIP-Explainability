@@ -8,6 +8,11 @@
 
 ## Installation :wrench:
 
+### Prerequisites
+- Python >= 3.8
+- CUDA >= 11.0 (for GPU support)
+- 16GB+ RAM recommended
+
 For running SlowFAST models;
 
 Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
