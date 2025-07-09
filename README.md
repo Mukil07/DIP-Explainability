@@ -9,7 +9,7 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 
 
 - [Introduction](#introduction)
-- [Installation :wrench:](#installation)
+- [Installation](#installation)
 
 ## Introduction
 
@@ -28,7 +28,7 @@ We present DAAD-X, a new multimodal, egocentric video dataset offering high-leve
 To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a framework that inherently generates spatio-temporally coherent explanations **without post-hoc methods**. Through extensive experiments, we show that transformer-based models offer superior interpretability over CNNs. We also introduce a **multilabel t-SNE visualization** to highlight the causal structure among explanations.
 
 
-## Installation :wrench:
+## Installation:wrench:
 
 ### Prerequisites
 - Python >= 3.8
