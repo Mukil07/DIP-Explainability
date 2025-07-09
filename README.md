@@ -35,11 +35,11 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 - CUDA >= 11.0 (for GPU support)
 - 16GB+ RAM recommended
 
-### Installation for SlowFAST/MViTv2 models;
+### - SlowFAST/MViTv2 models;
 
 Our conda environment is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
 
-### Installation for I3D and DINO models;
+### - I3D/DINO models;
 
 ```shell
 git clone https://github.com/Mukil07/DIP-Explainability.git
