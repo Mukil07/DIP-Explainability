@@ -143,7 +143,7 @@ Copy all the videos folder and annotation folder inside a folder named "data" in
 ```
 data
 ├── front 
-│    ├── 2b69bf02-f20a-4ea4-8100-aeac205c6e17
+│    ├── 2b69bf02-f20a-4ea4-8100-aeac205c6e17.mp4
 │    ├── 1ff35b67-5gaa-35a4-3250-aeac205c0613.mp4
 │      ...
 ├── rear
