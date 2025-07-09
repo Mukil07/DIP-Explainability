@@ -39,7 +39,7 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 
 Our conda environment is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
 
-### - I3D/DINO models;
+### - I3D/DINO/VideoMAE/Cemformer models;
 
 ```shell
 git clone https://github.com/Mukil07/DIP-Explainability.git
