@@ -1,4 +1,4 @@
-# Towards Safer and Understandable Driver Intention Prediciton 🚗🛡
+# Towards Safer and Understandable Driver Intention Prediction 🚗🛡
 ## ICCV 2025
 
 Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Jawahar
@@ -34,7 +34,7 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 
 ### Installation for SlowFAST/MViTv2 models;
 
-Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
+Our conda environment is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
 
 ### Installation for I3D and DINO models;
 
