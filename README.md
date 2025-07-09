@@ -9,7 +9,7 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 
 
 - [Introduction](#introduction)
-- [Installation](#installation)
+- [Installation :wrench:](#installation-:wrench:)
 
 ## Introduction
 
