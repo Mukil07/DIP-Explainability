@@ -8,7 +8,7 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 ## Table of Contents
 
 
-- [Installation](#Installation)
+- [Installation](#installation)
 
 <p align="center">
   <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
