@@ -16,6 +16,15 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 
 ---
 
+## Introduction
+
+Autonomous driving (AD) systems increasingly rely on deep learning, but understanding why they make decisions remains a challenge. To address this, we introduce Driver Intent Prediction (DIP) — the task of anticipating driver maneuvers before they happen, with a focus on **interpretability**.
+
+We present DAAD-X, a new multimodal, egocentric video dataset offering high-level, hierarchical textual explanations grounded in both driver eye-gaze and vehicle perspective.
+
+To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a framework that inherently generates spatio-temporally coherent explanations **without post-hoc methods**. Through extensive experiments, we show that transformer-based models offer superior interpretability over CNNs. We also introduce a **multilabel t-SNE visualization** to highlight the causal structure among explanations.
+
+
 ## Installation :wrench:
 
 ### Prerequisites
