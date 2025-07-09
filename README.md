@@ -8,7 +8,10 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 ## Table of Contents
 
 
-- [Installation](#installation)
+- [Introduction](#introduction)
+
+
+## Introduction
 
 <p align="center">
   <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
@@ -16,7 +19,7 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 
 ---
 
-## Introduction
+
 
 Autonomous driving (AD) systems increasingly rely on deep learning, but understanding why they make decisions remains a challenge. To address this, we introduce Driver Intent Prediction (DIP) — the task of anticipating driver maneuvers before they happen, with a focus on **interpretability**.
 
