@@ -13,11 +13,11 @@
 - CUDA >= 11.0 (for GPU support)
 - 16GB+ RAM recommended
 
-For running SlowFAST models;
+### Installation for SlowFAST/MViTv2 models;
 
 Our python environement is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
 
-For running I3D and DINO models;
+### Installation for I3D and DINO models;
 
 ```shell
 git clone https://github.com/Mukil07/DIP-Explainability.git
