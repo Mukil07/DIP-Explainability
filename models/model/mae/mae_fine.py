@@ -44,8 +44,8 @@ class Adapter(nn.Module):
         config.patch_size = 16           # Patch size
         config.num_frames = 16           # Number of video frames
         config.hidden_size = 768         # Hidden layer size
-        config.num_attention_heads = 12
-        #config.num_labels = 5  # Attention heads
+        config.num_attention_heads = 12  # Attention heads
+        #config.num_labels = 5  
         config.num_labels = num_classes
         config.dropout = 0.4  
 
