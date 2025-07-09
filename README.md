@@ -1,4 +1,14 @@
 # Towards Safer and Understandable Driver Intention Prediciton 🚗🛡
+## ICCV 2025
+
+Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Jawahar
+
+
+
+## Table of Contents
+
+
+- [Installation](#Installation)
 
 <p align="center">
   <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
