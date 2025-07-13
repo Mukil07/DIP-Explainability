@@ -43,7 +43,7 @@ class plot_tsne():
             s=50,
         )
 
-        # For the black points, use a list of unique markers.
+
 
         unique_markers = ['X', 's', '^', 'v', '<', '>', '1', '2', '3', '4',
                           'p', '*', 'h', 'H', 'D', 'd', 'P', '8','o' ]

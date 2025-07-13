@@ -17,8 +17,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 from sklearn.metrics import accuracy_score, f1_score
 
-
-
 from utils.multilabel_tsne import plot_tsne as TSNE
 from utils.plot_confusion import confusion
 from utils.DIPX_2vid import CustomDataset

@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-with open("/scratch/mukilv2/cemformer/data_baseline.pkl", "rb") as f:
+with open("./data_baseline.pkl", "rb") as f:
     data = pickle.load(f)
 
 #import pdb;pdb.set_trace()

@@ -96,13 +96,13 @@ class CustomDataset(Dataset):
         self.debug = debug
         self.data = []
         self.classes_dict = {"rturn": 0, "rchange": 1, "lturn": 2, "lchange": 3, "endaction": 4}
-        self.road_path = '/scratch/mukil/brain4cars_data/road_cam/'
+        self.road_path = 'DATA/road_cam/'
 
         if self.debug:
             
-            self.csv_path = f'/scratch/mukil/brain4cars_data/face_cam/train_{self.debug}.csv'
+            self.csv_path = f'DATA/face_cam/train_{self.debug}.csv'
         else:
-            self.csv_path = '/scratch/mukil/brain4cars_data/face_cam/train.csv'
+            self.csv_path = 'DATA/face_cam/train.csv'
 
         self._load_data()
 

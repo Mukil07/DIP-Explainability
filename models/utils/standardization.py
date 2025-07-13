@@ -20,15 +20,6 @@ class OnlineMeanStd:
         pass
 
     def __call__(self, dataset, batch_size, method='strong'):
-        """
-        Calculate mean and std of a dataset in lazy mode (online)
-        On mode strong, batch size will be discarded because we use batch_size=1 to minimize leaps.
-
-        :param dataset: Dataset object corresponding to your dataset
-        :param batch_size: higher size, more accurate approximation
-        :param method: weak: fast but less accurate, strong: slow but very accurate - recommended = strong
-        :return: A tuple of (mean, std) with size of (3,)
-        """
 
         if method == 'weak':
             loader = DataLoader(dataset=dataset,
