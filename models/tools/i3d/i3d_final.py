@@ -44,7 +44,7 @@ def Trainer(args, train_subset, valid_subset ):
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/weights/rgb_imagenet_modified.pt',map_location=device)
+    ckp = torch.load(args.weights,map_location=device)
     # ckp = torch.load(checkpoint,map_location=device)
     del ckp['logits.conv3d.bias']
     del ckp['logits.conv3d.weight']
@@ -475,7 +475,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-
+    parser.add_argument("--weights",  type = str, default = "weights/rgb_imagenet_modified.pt")
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
@@ -491,11 +491,11 @@ if __name__ == '__main__':
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukilv2")
+    cache_dir = os.path.join(home_dir, "mukil_new")
     world_size = torch.cuda.device_count()
 
-    train_csv = "/scratch/mukilv2/dipx/train.csv"
-    val_csv = "/scratch/mukilv2/dipx/val.csv"
+    train_csv = "/scratch/mukil_new/dipx/train_debug.csv"
+    val_csv = "/scratch/mukil_new/dipx/val.csv"
 
     # transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 

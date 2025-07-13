@@ -12,13 +12,13 @@
 
 
 
-source activate sf
-module load u18/cuda/11.7
+source activate VCBM
+module load u22/cuda/11.7
 
-cd /scratch/mukil/models
+cd /scratch/mukil_new/models
 
-TECH=i3d_ego_50
-MODEL=i3d_fine
+MODEL=i3d_proposed
+TECH=i3d_proposed_github_5
 DATASET=dipx
 
 best=best_${MODEL}_${DATASET}_${TECH}_dir
@@ -29,7 +29,7 @@ rm -rf $runs
 
 # python aria_gaze.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET  \
 #     --technique $TECH  --dropout 0.65 --accumulation 4 --learning_rate 0.0001 --n_attributes 17 --multitask_classes 15 -ego_cbm -bottleneck -multitask
-export PYTHONPATH="${PYTHONPATH}:/scratch/mukil/models"
+export PYTHONPATH="${PYTHONPATH}:/scratch/mukil_new/models"
 
 python tools/i3d/i3d_50.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 

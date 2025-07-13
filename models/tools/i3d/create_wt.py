@@ -1,7 +1,7 @@
 import torch
 
 
-model_path = '/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet.pt'
+model_path = 'weights/rgb_imagenet.pt'
 state_dict = torch.load(model_path)
 
 duplicated_state = {}
@@ -22,5 +22,5 @@ for key, value in state_dict.items():
         duplicated_state[key] = value
 
 
-new_path = '/scratch/mukil/final/pytorch-i3d/models/rgb_imagenet_modified.pt'
+new_path = 'weights/rgb_imagenet_modified.pt'
 torch.save(duplicated_state, new_path)

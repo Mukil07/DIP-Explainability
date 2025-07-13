@@ -15,11 +15,12 @@ def visualize(frames, num, label, video_name="./visualize_camvid/output_video.av
         os.mkdir(save_dirvid)
     # Save frames as images
     video_name = f"./visualize_camvid_{label}/vid{num}.avi"
-    #import pdb;pdb.set_trace()
+    #import pdb;pdb.set_trace()os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
     for i,img in enumerate(frames):
         
         # if not os.path.exists(save_dir):
-        #     os.mkdir(save_dir)
+            
         # for i, img in enumerate(batch):
             img = normalize(img)
             img = img.cpu().numpy().astype(np.uint8)

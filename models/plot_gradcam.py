@@ -4,7 +4,7 @@ import argparse
 from tqdm.auto import tqdm
 import os
 import numpy as np 
-from utils.DIPX_v2 import CustomDataset
+from utils.DIPX_350 import CustomDataset
 from utils.gradcam import GradCAM
 from utils.save_img import visualize
 
@@ -19,8 +19,9 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
     model.to(device)
     #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/weights/best_cbm_dipx.pth',map_location=device)
+    ckp = torch.load(args.weights,map_location=device)
     import pdb;pdb.set_trace()
+
     model.load_state_dict(ckp,strict=True)
     model.eval()
     total_params = sum(p.numel() for p in model.parameters())
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-
+    parser.add_argument("--weights",  type = str, default = "weights/best_i3d_fine_dipx.pth")
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
@@ -109,9 +110,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukilv2")
-    train_csv = "/scratch/mukilv2/dipx/train.csv"
-    val_csv = "/scratch/mukilv2/dipx/val.csv"
+    cache_dir = os.path.join(home_dir, "mukil_new")
+    train_csv = "/scratch/mukil_new/dipx/train_debug.csv"
+    val_csv = "/scratch/mukil_new/dipx/val.csv"
     train_subset = CustomDataset(train_csv, debug = args.debug)
     val_subset = CustomDataset(val_csv, debug=args.debug)
 
