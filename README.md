@@ -35,6 +35,12 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 - CUDA >= 11.0 (for GPU support)
 - 16GB+ RAM recommended
 
+We have used this setup:
+
+RTX A6000 (48GB)
+Cuda 11.7
+Python 3.10
+
 ### - SlowFAST/MViTv2 models;
 
 Our conda environment is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
