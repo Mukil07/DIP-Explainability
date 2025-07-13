@@ -162,7 +162,9 @@ data
 ```
 ## Training and Evaluation 
 
-Training script is as follows 
+The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
+
+Evaluation script for 10 clusters;   
 
 ```shell
 python eval.py \
