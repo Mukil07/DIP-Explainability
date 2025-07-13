@@ -172,7 +172,7 @@ DATA
     ├── test.csv
     ├── time.csv
 ```
-## Training and Evaluation 
+## Training and Evaluation 🧪:
 
 The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
 
@@ -233,7 +233,9 @@ python tools/run_net_final.py \
   CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False CBM.CLUSTER 5 \
   TRAIN.AUTO_RESUME False SOLVER.MAX_EPOCH 200 MVIT.LATE_AVG True OUTPUT_DIR ./output
 ```
-## GradCAM Visualization 
+## Visualization 🔭:
+
+### GradCAM Visualization
 
 To create GradCAM visualization for the I3D model, 
 
@@ -253,7 +255,7 @@ python tools/eval_net_final.py \
   CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False MVIT.LATE_AVG True \
   TRAIN.ENABLE True SOLVER.MAX_EPOCH 1 OUTPUT_DIR ./output
 ```
-## Multilabel T-SNE plots
+### Multilabel T-SNE plots 
 
 For plotting multilabel t-SNE plot, 
 
