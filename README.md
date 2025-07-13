@@ -162,6 +162,20 @@ data
 ```
 ## Training and Evaluation 
 
+Training script is as follows 
+
+```shell
+python eval.py \
+  --model $MODEL \
+  --batch 8 \
+  --num_classes 7 \
+  --dataset $DATASET \
+  --technique $TECH  \
+  --n_attributes 17  \
+  --multitask_classes 15 \
+  --clusters 10 \
+  -ego_cbm -multitask -bottleneck
+```
 ## GradCAM Visualization 
 
 ## Multilabel T-SNE plots
