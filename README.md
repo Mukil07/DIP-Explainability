@@ -164,9 +164,13 @@ data
 
 The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
 
-Evaluation script for 10 clusters;   
+Evaluation script for i3d proposed with 10 clusters;   
 
 ```shell
+MODEL=i3d_proposed
+DATASET=dipx
+TECH=i3d_proposed
+
 python eval.py \
   --model $MODEL \
   --batch 8 \
