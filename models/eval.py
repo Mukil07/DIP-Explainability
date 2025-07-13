@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn 
 import numpy as np 
 
-from utils.DIPX_350 import CustomDataset
+from utils.loader import CustomDataset
 from utils.gradcam import GradCAM
 from utils.save_img import visualize
 from sklearn.metrics import accuracy_score, f1_score
@@ -112,9 +112,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukil_new")
+    cache_dir = os.path.join(home_dir, "./")
     
-    val_csv = "/scratch/mukil_new/dipx/val.csv"
+    val_csv = "DATA/val.csv"
 
     val_subset = CustomDataset(val_csv, debug=args.debug)
 

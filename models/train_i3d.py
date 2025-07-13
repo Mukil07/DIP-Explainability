@@ -282,7 +282,7 @@ if __name__ == '__main__':
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukil_new")
+    cache_dir = os.path.join(home_dir, "./")
     world_size = torch.cuda.device_count()
 
     train_csv = "DATA/train.csv"

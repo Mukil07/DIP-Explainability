@@ -4,7 +4,7 @@ import argparse
 from tqdm.auto import tqdm
 import os
 import numpy as np 
-from utils.DIPX_350 import CustomDataset
+from utils.loader import CustomDataset
 from utils.gradcam import GradCAM
 from utils.save_img import visualize
 
@@ -20,7 +20,7 @@ def trainer(args, train_subset, valid_subset, n_splits=5):
     #import pdb;pdb.set_trace()
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
     ckp = torch.load(args.weights,map_location=device)
-    import pdb;pdb.set_trace()
+    #import pdb;pdb.set_trace()
 
     model.load_state_dict(ckp,strict=True)
     model.eval()
@@ -77,10 +77,7 @@ def val( valid_dataloader, model, device):
             if i ==50:
                 exit()
 if __name__ == '__main__':
-    seed = 37
 
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-r", "--directory", help="Directory for home_dir", default = os.path.expanduser('~'))
@@ -110,9 +107,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukil_new")
-    train_csv = "/scratch/mukil_new/dipx/train_debug.csv"
-    val_csv = "/scratch/mukil_new/dipx/val.csv"
+    cache_dir = os.path.join(home_dir, "./")
+    train_csv = "DATA/train_debug.csv"
+    val_csv = "DATA/val.csv"
     train_subset = CustomDataset(train_csv, debug = args.debug)
     val_subset = CustomDataset(val_csv, debug=args.debug)
 

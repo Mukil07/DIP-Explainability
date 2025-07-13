@@ -54,7 +54,7 @@ def Eval(args, valid_subset ):
     model.to(device)
 
     #checkpoint = "weights/dino_vitbase16_pretrain.pth"
-    ckp = torch.load('/scratch/mukilv2/cemformer/weights/best_i3d_fine_dipx.pth',map_location=device)
+    ckp = torch.load(args.weights,map_location=device)
                
     model.load_state_dict(ckp,strict=False)
 
@@ -405,7 +405,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch",  type = int, default = 1)
     parser.add_argument("--distributed",  type = bool, default = False)
     parser.add_argument("--n_attributes", type = int, default= None) # for bottleneck
-
+    parser.add_argument("--weights",  type = str, default = None)
     parser.add_argument("--connect_CY", type = bool, default= False)
     parser.add_argument("--expand_dim", type = int, default= 0)
     parser.add_argument("--use_relu", type = bool, default= False)
@@ -421,10 +421,10 @@ if __name__ == '__main__':
     parser.add_argument("-combined_bottleneck", action="store_true", help="Enable combined_bottleneck mode")
     args = parser.parse_args()
     home_dir = str(args.directory)
-    cache_dir = os.path.join(home_dir, "mukilv2")
+    cache_dir = os.path.join(home_dir, "./")
     world_size = torch.cuda.device_count()
 
-    val_csv = "/scratch/mukilv2/dipx/val.csv"
+    val_csv = "DATA/val.csv"
     
 
     val_subset = CustomDataset(val_csv, debug=args.debug)
