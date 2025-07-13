@@ -37,9 +37,9 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 
 We have used this setup:
 
-RTX A6000 (48GB)
-Cuda 11.7
-Python 3.10
+- RTX A6000 (48GB)
+- Cuda 11.7
+- Python 3.10
 
 ### - SlowFAST/MViTv2 models;
 
