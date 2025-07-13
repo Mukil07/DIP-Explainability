@@ -1,6 +1,6 @@
 model_path: 'model/best.pt'
 #videos_path: '/scratch/partition/'
-videos_path: '/scratch/mukil/dipx/common/aria_common'
+videos_path: 'DATA/common/aria_common'
 detection_conf_thresh: 0.1
 gpu_avail: True #True
 vid_format: .png #or any other format supported by YOLO

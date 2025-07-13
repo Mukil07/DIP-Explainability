@@ -80,7 +80,7 @@ class token_merging(nn.Module):
     def forward(self,x):
 
         # labels = self.ordering(x) # first of all get the (x,y,t) indices for each token 
-        # d = self.distance(x,labels) # this should compute the distance matrix (N,N) x: (B,N,dim)
+        # d = self.distance(x,labels) # this should compute the distance matrix (N,K) x: (B,K,dim)
         x = self.cluster(x)
 
         return x 

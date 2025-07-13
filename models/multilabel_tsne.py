@@ -420,7 +420,7 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "./")
     world_size = torch.cuda.device_count()
 
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    val_csv = "DATA/val.csv"
     
 
     val_subset = CustomDataset(val_csv, debug=args.debug)

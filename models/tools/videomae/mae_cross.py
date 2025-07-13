@@ -543,8 +543,8 @@ if __name__ == '__main__':
     cache_dir = os.path.join(home_dir, "mukil")
     world_size = torch.cuda.device_count()
 
-    train_csv = "/scratch/mukil/dipx/train.csv"
-    val_csv = "/scratch/mukil/dipx/val.csv"
+    train_csv = "DATA/train.csv"
+    val_csv = "DATA/val.csv"
 
     # transform = torchvision.transforms.Compose([torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
