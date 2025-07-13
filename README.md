@@ -162,6 +162,26 @@ data
 ```
 ## Training and Evaluation 
 
+The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
+
+Evaluation script for i3d proposed with 10 clusters;   
+
+```shell
+MODEL=i3d_proposed
+DATASET=dipx
+TECH=i3d_proposed
+
+python eval.py \
+  --model $MODEL \
+  --batch 8 \
+  --num_classes 7 \
+  --dataset $DATASET \
+  --technique $TECH  \
+  --n_attributes 17  \
+  --multitask_classes 15 \
+  --clusters 10 \
+  -ego_cbm -multitask -bottleneck
+```
 ## GradCAM Visualization 
 
 ## Multilabel T-SNE plots
