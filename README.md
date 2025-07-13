@@ -64,6 +64,10 @@ pip install -e .
 
 We created dual encoder of all the models, so we need to modify the pretrained weights. Download the I3D weights --> `models/rgb_imagenet.pt` from `https://github.com/piergiaj/pytorch-i3d.git`. Further, run this script `models/i3d/create_wt.py` to create the dual encoder weights for i3d.
 
+## Models Zoo 🏋️:
+
+
+
 ## DAAD-X Dataset 📖:
 
 The DAADX Dataset is derived from DAAD dataset (https://cvit.iiit.ac.in/research/projects/cvit-projects/daad#dataset), which contains all the captured videos for the Driver Intention Prediction task.
