@@ -164,7 +164,21 @@ data
 
 The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
 
-Evaluation script for i3d proposed with 10 clusters;   
+To train I3D model with bottleneck,
+
+```shell
+MODEL=i3d_proposed
+python models/train_i3d.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET --technique $TECH \
+    --n_attributes 17 --multitask_classes 15 --clusters 1 -ego_cbm -multitask -bottleneck 
+```
+To train I3D model without bottleneck,
+
+```shell
+MODEL=i3d_fine
+python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET \
+    --technique $TECH --dropout 0.45 --n_attributes 0 
+```
+Evaluation script for i3d proposed;   
 
 ```shell
 MODEL=i3d_proposed
@@ -182,6 +196,61 @@ python eval.py \
   --clusters 10 \
   -ego_cbm -multitask -bottleneck
 ```
+
+
+To train MViTv2 without bottleneck layer,
+
+```shell
+python tools/run_net_final.py \
+  --cfg configs/Kinetics/MVITv2_S_CBM.yaml \
+  --opts TRAIN.BATCH_SIZE 8 TEST.BATCH_SIZE 8 \
+  CBM.N_ATTR 0 CBM.MUL_CLASSES 0 \
+  CBM.MULTITASK False CBM.BOTTLENECK False \
+  CBM.GAZE_CBM False CBM.EGO_CBM False CBM.COMB_BOTTLE False \
+  TRAIN.AUTO_RESUME False SOLVER.MAX_EPOCH 200 MVIT.LATE_AVG True OUTPUT_DIR ./output
+```
+
+To train MViTv2 with bottleneck layer, 
+
+```shell
+python tools/run_net_final.py \
+  --cfg configs/Kinetics/MVITv2_S_CBM.yaml \
+  --opts TRAIN.BATCH_SIZE 1 TEST.BATCH_SIZE 1 \
+  CBM.N_ATTR 17 CBM.MUL_CLASSES 15 \
+  CBM.MULTITASK True CBM.BOTTLENECK True \
+  CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False CBM.CLUSTER 5 \
+  TRAIN.AUTO_RESUME False SOLVER.MAX_EPOCH 200 MVIT.LATE_AVG True OUTPUT_DIR ./output
+```
 ## GradCAM Visualization 
 
+To create GradCAM visualization for the I3D model, 
+
+```shell
+python plot_gradcam.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
+    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
+```
+
+To create GradCAM visualizations for MViTv2 model,
+
+```shell
+python tools/eval_net_final.py \
+  --cfg configs/Kinetics/MVITv2_S_CBM_eval.yaml \
+  --opts TEST.BATCH_SIZE 8 TEST.CHECKPOINT_FILE_PATH $WEIGHTS \
+  CBM.N_ATTR 17 CBM.MUL_CLASSES 15 \
+  CBM.MULTITASK True CBM.BOTTLENECK True \
+  CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False MVIT.LATE_AVG True \
+  TRAIN.ENABLE True SOLVER.MAX_EPOCH 1 OUTPUT_DIR ./output
+```
 ## Multilabel T-SNE plots
+
+For plotting multilabel t-SNE plot, 
+
+```shell
+python multilabel_tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
+    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
+```
+For plotting normal t-SNE plot, 
+```shell
+python tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
+    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
+```
