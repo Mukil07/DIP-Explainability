@@ -52,11 +52,6 @@ export PYTHONPATH="./:$PYTHONPATH"
 cd transformers
 pip install -e .
 
-# install pytorchvideo from source
-cd ../
-git clone https://github.com/facebookresearch/pytorchvideo.git
-cd pytorchvideo
-pip install -e .
 ```
 
 Additionally have to install transformers library and Pytorch Video, 
