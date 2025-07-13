@@ -47,6 +47,16 @@ cd models
 conda env create -f environment.yml
 
 export PYTHONPATH="./:$PYTHONPATH"
+
+# install the edited transfomrers library in editable model
+cd transformers
+pip install -e .
+
+# install pytorchvideo from source
+cd ../
+git clone https://github.com/facebookresearch/pytorchvideo.git
+cd pytorchvideo
+pip install -e .
 ```
 
 Additionally have to install transformers library and Pytorch Video, 
