@@ -14,7 +14,7 @@ import slowfast.visualization.tensorboard_vis as tb
 import torch
 from PIL import Image
 import torchvision
-from utils.DIPXv2 import CustomDataset
+from utils.loader import CustomDataset
 import tqdm
 from slowfast.datasets import loader
 from slowfast.models import build_model
