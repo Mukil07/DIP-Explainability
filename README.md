@@ -137,11 +137,11 @@ They are time synced videos captured at the particular manuever.
 Follow the steps below to recreate DAAD-X using the data curation pipeline proposed in the paper. You'll need to download the [DAAD-X dataset](please paste link here).
 
 Extract the DAADX.tar file to get videos folders based on views (front, right etc) with its corresponding videos. 
-Copy all the videos folder and annotation folder inside a folder named "data" in the root directory. 
+Copy all the videos folder and annotation folder inside a folder named "DATA" in the root directory. 
 
 **-** Be sure your DAAD-X data directory is structured in the following way
 ```
-data
+DATA
 ├── front 
 │    ├── 2b69bf02-f20a-4ea4-8100-aeac205c6e17.mp4
 │    ├── 1ff35b67-5gaa-35a4-3250-aeac205c0613.mp4
