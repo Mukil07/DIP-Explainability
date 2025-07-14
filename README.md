@@ -7,11 +7,11 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 
 ## Table of Contents
 
-
 - [Introduction](#introduction)
 - [Installation](#installation-)
 - [DAAD-X Dataset](#daad-x-dataset)
-## Introduction
+  
+## Introduction 🚗:
 
 <p align="center">
   <img src="./figures/Teaser_Diagram_Ver2.0_page-0001.jpg" alt="VCBM Application">
@@ -35,6 +35,12 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 - CUDA >= 11.0 (for GPU support)
 - 16GB+ RAM recommended
 
+We have used this setup:
+
+- RTX A6000 (48GB)
+- Cuda 11.7
+- Python 3.10
+
 ### - SlowFAST/MViTv2 models;
 
 Our conda environment is identical to [SlowFAST](https://github.com/facebookresearch/SlowFast.git), we recommend following their installation instructions.
@@ -47,6 +53,11 @@ cd models
 conda env create -f environment.yml
 
 export PYTHONPATH="./:$PYTHONPATH"
+
+# install the edited transfomrers library in editable model
+cd transformers
+pip install -e .
+
 ```
 
 Additionally have to install transformers library and Pytorch Video, 
@@ -56,6 +67,13 @@ git clone https://github.com/facebookresearch/pytorchvideo.git
 pip install -e .
 ```
 ---
+
+We created dual encoder of all the models, so we need to modify the pretrained weights. Download the I3D weights --> `models/rgb_imagenet.pt` from `https://github.com/piergiaj/pytorch-i3d.git`. Further, run this script `models/i3d/create_wt.py` to create the dual encoder weights for i3d.
+
+## Models Zoo 🏋️:
+
+
+
 ## DAAD-X Dataset 📖:
 
 The DAADX Dataset is derived from DAAD dataset (https://cvit.iiit.ac.in/research/projects/cvit-projects/daad#dataset), which contains all the captured videos for the Driver Intention Prediction task.
@@ -160,7 +178,7 @@ DATA
     ├── test.csv
     ├── time.csv
 ```
-## Training and Evaluation 
+## Training and Evaluation 🧪:
 
 The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
 
@@ -221,7 +239,9 @@ python tools/run_net_final.py \
   CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False CBM.CLUSTER 5 \
   TRAIN.AUTO_RESUME False SOLVER.MAX_EPOCH 200 MVIT.LATE_AVG True OUTPUT_DIR ./output
 ```
-## GradCAM Visualization 
+## Visualization 🔭:
+
+### GradCAM Visualization
 
 To create GradCAM visualization for the I3D model, 
 
@@ -241,7 +261,7 @@ python tools/eval_net_final.py \
   CBM.GAZE_CBM False CBM.EGO_CBM True CBM.COMB_BOTTLE False MVIT.LATE_AVG True \
   TRAIN.ENABLE True SOLVER.MAX_EPOCH 1 OUTPUT_DIR ./output
 ```
-## Multilabel T-SNE plots
+### Multilabel T-SNE plots 
 
 For plotting multilabel t-SNE plot, 
 
@@ -254,3 +274,5 @@ For plotting normal t-SNE plot,
 python tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
 ```
+## Acknowledgements 🙏
+
