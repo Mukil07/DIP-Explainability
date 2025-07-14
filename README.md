@@ -82,6 +82,8 @@ We are introducing the first video based explanations dataset for driver intenti
 DAAD-X contains explanations for each maneuver instance, these explanations corresponds to both Driver's perspective (Gaze explanations) and Car's perspective (Ego Explanations). This will help in understanding why
 the model predicts the particular maneuver with high level human understandable explanations. 
 
+DAAD-X dataset can be downloaded from [here](https://cvit.iiit.ac.in/images/datasets/daadx/daadx.tar.gz).
+
 The annotations folder contains the following files:
 ```shell
 total.csv -- all the annotations (1568 (all views with gaze) + 158 (all views wihtout gaze))
