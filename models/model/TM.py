@@ -17,6 +17,7 @@ class token_merging(nn.Module):
         K=clusters
         dim = 2048
         self.centers = torch.nn.Parameter(torch.randn(ori_shape[0], K, ori_shape[-1]))
+        self.center_coord = torch.nn.Parameter(torch.randn(K,3))
 
     def ordering(self,tokens):
 
@@ -30,32 +31,34 @@ class token_merging(nn.Module):
     
     def distance(self,tokens,labels):
 
-        cos_sim = F.cosine_similarity(
-            tokens.unsqueeze(2), 
-            tokens.unsqueeze(1), 
-            dim=-1
-        )
+        tokens_norm = tokens / (tokens.norm(dim=-1, keepdim=True) + 1e-8)        # (N, dim)
+        centers_norm = self.centers / (self.centers.norm(dim=-1, keepdim=True) + 1e-8)  # (K, dim)
 
-        d_feature = 1.0 - cos_sim  # (B, N, N)
+        #cos_sim = (tokens_norm.unsqueeze(1) * centers_norm.unsqueeze(0)).sum(dim=-1)# (N, K)
+        cos_sim = F.cosine_similarity(tokens_norm.unsqueeze(2),centers_norm.unsqueeze(1),dim=-1)
+        #cos_sim = tokens_norm@centers_norm.T
+        d_feature = 1.0 - cos_sim
 
         coords_2d = labels[:, :2]  #(98, 2)
         t_values  = labels[:, 2]   #(98,)
 
+        coords_2d_c = self.center_coord[:,:2]
+        t_values_c = self.center_coord[:,2]
 
-        delta_xy  = coords_2d.unsqueeze(1) - coords_2d.unsqueeze(0)
-        d_spatial = delta_xy.norm(dim=-1)  # (N, N)
+        delta_xy  = torch.cdist(coords_2d, coords_2d_c, p=2)
+        d_spatial = delta_xy.norm(dim=-1)  # (N, K)
 
         d_spatial = d_spatial / self.Smax # normalized
 
 
-        delta_t   = t_values.unsqueeze(1) - t_values.unsqueeze(0)
+        delta_t   = torch.abs(t_values[:, None] - t_values_c[None, :])
         
         d_temporal = delta_t.abs() / self.Tmax  # (N, N) normalized
 
 
         d_composite = (self.alpha * d_feature
-                       + self.beta * d_spatial.unsqueeze(0)
-                       + self.gamma * d_temporal.unsqueeze(0))
+                       + self.beta * d_spatial
+                       + self.gamma * d_temporal)
 
         return d_composite
 
