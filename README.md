@@ -245,7 +245,7 @@ python tools/run_net_final.py \
 
 ### GradCAM Visualization
 
-![Demo](./models/assets/out2.gif)
+![Demo](./models/assets/out3.gif)
 
 To create GradCAM visualization for the I3D model, 
 
