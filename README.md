@@ -3,6 +3,7 @@
 
 Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Jawahar
 
+📄 [Paper](https://arxiv.org/abs/your-paper-id) &nbsp;&nbsp;&nbsp; 🌐 [Project Webpage](https://mukil07.github.io/VCBM.github.io/)
 
 
 ## Table of Contents
@@ -81,6 +82,8 @@ We are introducing the first video based explanations dataset for driver intenti
 
 DAAD-X contains explanations for each maneuver instance, these explanations corresponds to both Driver's perspective (Gaze explanations) and Car's perspective (Ego Explanations). This will help in understanding why
 the model predicts the particular maneuver with high level human understandable explanations. 
+
+DAAD-X dataset can be downloaded from [here](https://cvit.iiit.ac.in/images/datasets/daadx/daadx.tar.gz).
 
 The annotations folder contains the following files:
 ```shell
@@ -180,7 +183,7 @@ DATA
 ```
 ## Training and Evaluation 🧪:
 
-The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
+To run the training or evaluation, please set the variable to the following entry. The `$MODEL` can be `i3d_proposed, i3d_baseline, i3d` and `$DATASET` can be `dipx, brain4cars` and `$TECH` is just a string, for saving purpose, it creates a folder with that name in the main directory. 
 
 To train I3D model with bottleneck,
 
@@ -192,7 +195,7 @@ python models/train_i3d.py --model $MODEL --batch 8 --num_classes 7 --dataset $D
 To train I3D model without bottleneck,
 
 ```shell
-MODEL=i3d_fine
+MODEL=i3d_baseline
 python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET \
     --technique $TECH --dropout 0.45 --n_attributes 0 
 ```
@@ -243,6 +246,8 @@ python tools/run_net_final.py \
 
 ### GradCAM Visualization
 
+![Demo](./models/assets/out3.gif)
+
 To create GradCAM visualization for the I3D model, 
 
 ```shell
@@ -263,6 +268,10 @@ python tools/eval_net_final.py \
 ```
 ### Multilabel T-SNE plots 
 
+<p align="center">
+  <img src="./models/assets/tsne_all_pred2.png" alt="Tsne">
+</p>   
+
 For plotting multilabel t-SNE plot, 
 
 ```shell
@@ -276,3 +285,9 @@ python tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --tec
 ```
 ## Acknowledgements 🙏
 
+The project was supported by iHub-Data and [Mobility](https://mobility.iiit.ac.in/) at IIIT, Hyderabad. 
+
+The codebase was built using, 
+
+- [CBM](https://github.com/yewsiang/ConceptBottleneck)
+- [Slowfast](https://github.com/facebookresearch/SlowFast)
