@@ -265,6 +265,10 @@ python tools/eval_net_final.py \
 ```
 ### Multilabel T-SNE plots 
 
+<p align="center">
+  <img src="./models/assets/TSNE/tsne_all_pred.png" alt="Tsne">
+</p>   
+
 For plotting multilabel t-SNE plot, 
 
 ```shell
