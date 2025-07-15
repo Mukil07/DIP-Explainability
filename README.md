@@ -183,7 +183,7 @@ DATA
 ```
 ## Training and Evaluation 🧪:
 
-The $MODEL can be i3d_proposed, i3d_baseline, i3d and $DATASET can be dipx, brain4cars and $TECH is a string, for saving purpose, keep i3d_proposed. 
+To run the training or evaluation, please set the variable to the following entry. The `$MODEL` can be `i3d_proposed, i3d_baseline, i3d` and `$DATASET` can be `dipx, brain4cars` and `$TECH` is just a string, for saving purpose, it creates a folder with that name in the main directory. 
 
 To train I3D model with bottleneck,
 
@@ -195,7 +195,7 @@ python models/train_i3d.py --model $MODEL --batch 8 --num_classes 7 --dataset $D
 To train I3D model without bottleneck,
 
 ```shell
-MODEL=i3d_fine
+MODEL=i3d_baseline
 python i3d/i3d_final.py --model $MODEL --batch 8 --num_classes 7 --dataset $DATASET \
     --technique $TECH --dropout 0.45 --n_attributes 0 
 ```
