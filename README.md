@@ -284,3 +284,9 @@ python tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --tec
 ```
 ## Acknowledgements 🙏
 
+The project was supported by iHub-Data and [Mobility](https://mobility.iiit.ac.in/) at IIIT, Hyderabad. 
+
+The codebase was built using, 
+
+[CBM](https://github.com/yewsiang/ConceptBottleneck)
+[Slowfast](https://github.com/facebookresearch/SlowFast)
