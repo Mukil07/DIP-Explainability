@@ -288,5 +288,5 @@ The project was supported by iHub-Data and [Mobility](https://mobility.iiit.ac.i
 
 The codebase was built using, 
 
-[CBM](https://github.com/yewsiang/ConceptBottleneck)
-[Slowfast](https://github.com/facebookresearch/SlowFast)
+- [CBM](https://github.com/yewsiang/ConceptBottleneck)
+- [Slowfast](https://github.com/facebookresearch/SlowFast)
