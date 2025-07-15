@@ -244,6 +244,7 @@ python tools/run_net_final.py \
 ## Visualization 🔭:
 
 ### GradCAM Visualization
+
 ![Demo](./models/assets/out2.gif)
 
 To create GradCAM visualization for the I3D model, 
@@ -267,7 +268,7 @@ python tools/eval_net_final.py \
 ### Multilabel T-SNE plots 
 
 <p align="center">
-  <img src="./models/assets/TSNE/tsne_all_pred2.png" alt="Tsne">
+  <img src="./models/assets/tsne_all_pred2.png" alt="Tsne">
 </p>   
 
 For plotting multilabel t-SNE plot, 
