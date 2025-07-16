@@ -208,6 +208,7 @@ TECH=i3d_proposed
 
 python eval.py \
   --model $MODEL \
+  --weights $WEIGHT \
   --batch 8 \
   --num_classes 7 \
   --dataset $DATASET \
@@ -252,7 +253,7 @@ To create GradCAM visualization for the I3D model,
 
 ```shell
 python plot_gradcam.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
-    --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
+    --weights $WEIGHTS --clusters 5 --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
 ```
 
 To create GradCAM visualizations for MViTv2 model,
