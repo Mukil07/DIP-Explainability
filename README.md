@@ -3,7 +3,7 @@
 
 Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Jawahar
 
-📄 [Paper](https://arxiv.org/abs/your-paper-id) &nbsp;&nbsp;&nbsp; 🌐 [Project Webpage](https://mukil07.github.io/VCBM.github.io/)
+📄 [Paper]([https://arxiv.org/abs/your-paper-id](https://arxiv.org/pdf/2510.09200)) &nbsp;&nbsp;&nbsp; 🌐 [Project Webpage](https://mukil07.github.io/VCBM.github.io/)
 
 
 ## Table of Contents
