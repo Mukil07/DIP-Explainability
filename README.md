@@ -14,6 +14,8 @@ Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Ja
 - [Introduction](#introduction-)
 - [Installation](#installation-)
 - [DAAD-X Dataset](#daad-x-dataset-)
+- [Training and Evaluation](#training-and-evaluation-)
+- [Visualization](#visualization-)
   
 ## Introduction 🚗:
 
