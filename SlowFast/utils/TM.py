@@ -32,9 +32,7 @@ class token_merging(nn.Module):
         tokens_norm = tokens / (tokens.norm(dim=-1, keepdim=True) + 1e-8)        # (N, dim)
         centers_norm = self.centers / (self.centers.norm(dim=-1, keepdim=True) + 1e-8)  # (K, dim)
 
-        #cos_sim = (tokens_norm.unsqueeze(1) * centers_norm.unsqueeze(0)).sum(dim=-1)# (N, K)
         cos_sim = F.cosine_similarity(tokens_norm.unsqueeze(2),centers_norm.unsqueeze(1),dim=-1)
-        #cos_sim = tokens_norm@centers_norm.T
         d_feature = 1.0 - cos_sim
 
         coords_2d = labels[:, :2].float().cuda()
@@ -45,18 +43,13 @@ class token_merging(nn.Module):
         coords_2d_c = self.center_coord[:,:,:2].float()
         t_values_c = self.center_coord[:,:,2]
 
-        #import pdb;pdb.set_trace()
         delta_xy  = torch.cdist(coords_2d, coords_2d_c, p=2)
-        #d_spatial = delta_xy.norm(dim=-1)  # (B, N, K)
-
         d_spatial = delta_xy / self.Smax # normalized
 
 
         delta_t   = torch.abs(t_values[:,:, None] - t_values_c[:,None, :])
-        
         d_temporal = delta_t.abs() / self.Tmax  # (B, N, K) normalized
 
-        #import pdb; pdb.set_trace()
 
         d_composite = (self.alpha * d_feature
                        + self.beta * d_spatial
@@ -75,10 +68,8 @@ class token_merging(nn.Module):
 
         tokens_norm = tokens / (tokens.norm(dim=-1, keepdim=True) + 1e-8)        # (N, dim)
         centers_norm = self.centers / (self.centers.norm(dim=-1, keepdim=True) + 1e-8)  # (K, dim)
-
-        #cos_sim = (tokens_norm.unsqueeze(1) * centers_norm.unsqueeze(0)).sum(dim=-1)# (N, K)
         cos_sim = F.cosine_similarity(tokens_norm.unsqueeze(2),centers_norm.unsqueeze(1),dim=-1)
-        #cos_sim = tokens_norm@centers_norm.T
+        
         dist = 1.0 - cos_sim
 
         prob = F.softmax(-dist, dim=-1)  #(N,K)
@@ -88,7 +79,7 @@ class token_merging(nn.Module):
         return cluster_centers
         
     def forward(self,x):
-
+        
         # labels = self.ordering(x) # first of all get the (x,y,t) indices for each token 
         # x = self.distance(x,labels) # this should compute the distance matrix (N,K) x: (B,K,dim)
         x = self.cluster(x)
