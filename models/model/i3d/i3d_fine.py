@@ -43,17 +43,16 @@ class CBM(InceptionI3d):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x1,x2):
-        
-        #import pdb;pdb.set_trace()
+
         for end_point in self.VALID_ENDPOINTS:
             # if end_point == 'Logits':
-            #    # import pdb;pdb.set_trace()
+            
             if end_point in self.end_points1:
                 x1 = self._modules[end_point](x1) # use _modules to work with dataparallel
 
         for end_point in self.VALID_ENDPOINTS:
             # if end_point == 'Logits':
-            #     #import pdb;pdb.set_trace()
+            
             if end_point in self.end_points2:
                 x2 = self._modules[end_point](x2) # use _modules to work with dataparallel
 
@@ -102,7 +101,7 @@ class FC(nn.Module):
                 self.fc_new.stddev = stddev
 
     def forward(self, x):
-        #import pdb;pdb.set_trace()
+       
         if self.expand_dim > 0:
             x = self.fc_new(x)
             x = self.relu(x)
