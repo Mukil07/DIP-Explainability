@@ -3,7 +3,10 @@
 
 Mukilan Karuppasamy, Shankar Gangisetty, Shyam Nandan Rai, Carlo Masone, C.V. Jawahar
 
-📄 [Paper]([https://arxiv.org/abs/your-paper-id](https://arxiv.org/pdf/2510.09200)) &nbsp;&nbsp;&nbsp; 🌐 [Project Webpage](https://mukil07.github.io/VCBM.github.io/)
+- 📄 [Paper](https://arxiv.org/pdf/2510.09200)
+- 🌐 [Project Webpage](https://mukil07.github.io/VCBM.github.io/)
+- 🤗💾 [HF Model Checkpoint](https://huggingface.co/Skyrmion/VCBM/tree/main)
+- 🤗🗃️ [HF Dataset](https://huggingface.co/datasets/Skyrmion/DAAD-X)
 
 
 ## Table of Contents
