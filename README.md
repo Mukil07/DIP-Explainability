@@ -39,7 +39,6 @@ To model this, we propose the **Video Concept Bottleneck Model (VCBM)** — a fr
 ### Prerequisites
 - Python >= 3.8
 - CUDA >= 11.0 (for GPU support)
-- 16GB+ RAM recommended
 
 We have used this setup:
 
