@@ -285,6 +285,7 @@ For plotting normal t-SNE plot,
 python tsne.py --model $MODEL --batch 1 --num_classes 7 --dataset $DATASET --technique $TECH \
     --n_attributes 17 --multitask_classes 15  -ego_cbm -multitask -bottleneck 
 ```
+
 ## Acknowledgements 🙏
 
 The project was supported by iHub-Data and [Mobility](https://mobility.iiit.ac.in/) at IIIT, Hyderabad. 
@@ -293,3 +294,17 @@ The codebase was built using,
 
 - [CBM](https://github.com/yewsiang/ConceptBottleneck)
 - [Slowfast](https://github.com/facebookresearch/SlowFast)
+
+## BibTeX Citation 📚
+
+If you use this work, please cite our paper:
+
+```shell
+@inproceedings{karuppasamy2025towards,
+  title={Towards Safer and Understandable Driver Intention Prediction},
+  author={Karuppasamy, Mukilan and Gangisetty, Shankar and Rai, Shyam Nandan and Masone, Carlo and Jawahar, CV},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages={25378--25387},
+  year={2025}
+}
+```
